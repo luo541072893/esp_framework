@@ -6,7 +6,7 @@
 #include <ESP8266WebServer.h>
 #include "Config.h"
 #include "Led.h"
-#include "Wifi.h"
+#include "WifiMgr.h"
 #ifndef DISABLE_MQTT
 #include "Mqtt.h"
 #endif

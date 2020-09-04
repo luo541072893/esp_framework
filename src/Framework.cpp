@@ -124,12 +124,12 @@ void Framework::setup()
         tickerPerSecond->attach(1, tickerPerSecondDo);
 
         Http::begin();
-        Wifi::connectWifi();
+        WifiMgr::connectWifi();
     }
     else
     {
 #ifndef DISABLE_MQTT
-        Mqtt::setClient(Wifi::wifiClient);
+        Mqtt::setClient(WifiMgr::wifiClient);
         Mqtt::mqttSetConnectedCallback(connectedCallback);
         Mqtt::mqttSetLoopCallback(callback);
 #endif
@@ -137,7 +137,7 @@ void Framework::setup()
         tickerPerSecond = new Ticker();
         tickerPerSecond->attach(1, tickerPerSecondDo);
         Http::begin();
-        Wifi::connectWifi();
+        WifiMgr::connectWifi();
         Rtc::init();
     }
 }
@@ -146,7 +146,7 @@ void Framework::loop()
 {
     if (rebootCount == 3)
     {
-        Wifi::loop();
+        WifiMgr::loop();
         Http::loop();
     }
     else
@@ -160,7 +160,7 @@ void Framework::loop()
         yield();
         module->loop();
         yield();
-        Wifi::loop();
+        WifiMgr::loop();
         yield();
         Http::loop();
         yield();

@@ -391,17 +391,17 @@ void Http::handledhcp()
     String ip = server->arg(F("static_ip"));
     String netmask = server->arg(F("static_netmask"));
     String gateway = server->arg(F("static_gateway"));
-    if (!Wifi::isIp(ip))
+    if (!WifiMgr::isIp(ip))
     {
         server->send_P(200, PSTR("text/html"), PSTR("{\"code\":0,\"msg\":\"IP地址错误\"}"));
         return;
     }
-    if (!Wifi::isIp(netmask))
+    if (!WifiMgr::isIp(netmask))
     {
         server->send_P(200, PSTR("text/html"), PSTR("{\"code\":0,\"msg\":\"掩码地址错误\"}"));
         return;
     }
-    if (!Wifi::isIp(gateway))
+    if (!WifiMgr::isIp(gateway))
     {
         server->send_P(200, PSTR("text/html"), PSTR("{\"code\":0,\"msg\":\"网关地址错误\"}"));
         return;
@@ -550,7 +550,7 @@ void Http::handleWifi()
     }
     else
     {
-        Wifi::tryConnect(wifi, password);
+        WifiMgr::tryConnect(wifi, password);
         server->send_P(200, PSTR("text/html"), PSTR("{\"code\":1,\"msg\":\"尝试将ESP连接到网络。 如果失败，请重新连接到AP再试一次。\"}"));
     }
 }
@@ -639,7 +639,7 @@ void Http::handleGetStatus()
 #endif
 #endif
 
-    if (Wifi::configPortalStart == 0 && WiFi.isConnected())
+    if (WifiMgr::configPortalStart == 0 && WiFi.isConnected())
     {
         snprintf_P(tmpData, sizeof(tmpData), PSTR(",\"ip\":\"%s\""), WiFi.localIP().toString().c_str());
         server->sendContent_P(tmpData);
@@ -882,7 +882,7 @@ void Http::loop()
 
 bool Http::captivePortal()
 {
-    if (!Wifi::isIp(server->hostHeader()))
+    if (!WifiMgr::isIp(server->hostHeader()))
     {
         //Debug::AddInfo(PSTR("Request redirected to captive portal"));
         server->sendHeader(F("Location"), String(F("http://")) + server->client().localIP().toString(), true);

@@ -2,24 +2,24 @@
 #include <ESP8266WiFi.h>
 #include <DNSServer.h>
 #include <Ticker.h>
-#include "Wifi.h"
+#include "WifiMgr.h"
 #include "Debug.h"
 
-WiFiClient Wifi::wifiClient;
-WiFiEventHandler Wifi::STAGotIP;
-//WiFiEventHandler Wifi::STADisconnected;
-bool Wifi::isDHCP = true;
+WiFiClient WifiMgr::wifiClient;
+WiFiEventHandler WifiMgr::STAGotIP;
+//WiFiEventHandler WifiMgr::STADisconnected;
+bool WifiMgr::isDHCP = true;
 
-unsigned long Wifi::configPortalStart = 0;
+unsigned long WifiMgr::configPortalStart = 0;
 #ifdef WIFI_CONNECT_TIMEOUT
-unsigned long Wifi::connectStart = 0;
+unsigned long WifiMgr::connectStart = 0;
 #endif
-bool Wifi::connect = false;
-String Wifi::_ssid = "";
-String Wifi::_pass = "";
-DNSServer *Wifi::dnsServer;
+bool WifiMgr::connect = false;
+String WifiMgr::_ssid = "";
+String WifiMgr::_pass = "";
+DNSServer *WifiMgr::dnsServer;
 
-void Wifi::connectWifi()
+void WifiMgr::connectWifi()
 {
     delay(50);
     if (globalConfig.wifi.ssid[0] != '\0')
@@ -32,7 +32,7 @@ void Wifi::connectWifi()
     }
 }
 
-void Wifi::setupWifi()
+void WifiMgr::setupWifi()
 {
     WiFi.persistent(false); // Solve possible wifi init errors (re-add at 6.2.1.16 #4044, #4083)
     WiFi.disconnect(true);  // Delete SDK wifi config
@@ -81,7 +81,7 @@ void Wifi::setupWifi()
     WiFi.begin(globalConfig.wifi.ssid, globalConfig.wifi.pass);
 }
 
-void Wifi::setupWifiManager(bool resetSettings)
+void WifiMgr::setupWifiManager(bool resetSettings)
 {
     if (resetSettings)
     {
@@ -124,14 +124,14 @@ void Wifi::setupWifiManager(bool resetSettings)
     dnsServer->start(53, "*", WiFi.softAPIP());
 }
 
-void Wifi::tryConnect(String ssid, String pass)
+void WifiMgr::tryConnect(String ssid, String pass)
 {
     _ssid = ssid;
     _pass = pass;
     connect = true;
 }
 
-void Wifi::loop()
+void WifiMgr::loop()
 {
 #ifdef WIFI_CONNECT_TIMEOUT
     if (connectStart > 0 && millis() > connectStart + (WIFI_CONNECT_TIMEOUT * 1000))
@@ -210,7 +210,7 @@ void Wifi::loop()
     }
 }
 
-bool Wifi::isIp(String str)
+bool WifiMgr::isIp(String str)
 {
     int a, b, c, d;
     if ((sscanf(str.c_str(), "%d.%d.%d.%d", &a, &b, &c, &d) == 4) && (a >= 0 && a <= 255) && (b >= 0 && b <= 255) && (c >= 0 && c <= 255) && (d >= 0 && d <= 255))

@@ -1,7 +1,7 @@
 // Wifi.h
 
-#ifndef _WIFI_h
-#define _WIFI_h
+#ifndef _WIFIMRG_h
+#define _WIFIMRG_h
 
 #include <WiFiClient.h>
 #include <DNSServer.h>
@@ -13,7 +13,7 @@
 #endif
 #define MinimumWifiSignalQuality 8
 
-class Wifi
+class WifiMgr
 {
 private:
     static bool connect;
