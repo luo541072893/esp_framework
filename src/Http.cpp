@@ -1,14 +1,11 @@
-#include <ESP8266WebServer.h>
-#include <flash_hal.h>
+
 #include <FS.h>
 #include "StreamString.h"
-#include <ESP8266HTTPClient.h>
-#include <ESP8266httpUpdate.h>
 #include "Http.h"
 #include "Module.h"
 #include "Rtc.h"
 
-ESP8266WebServer *Http::server;
+WebServer *Http::server;
 bool Http::isBegin = false;
 
 void Http::handleRoot()
@@ -221,22 +218,28 @@ void Http::handleRoot()
 
     snprintf_P(tmpData, sizeof(tmpData),
                PSTR("<tr><td>ESP芯片ID</td><td>%d</td></tr>"
+#ifdef ESP8266
                     "<tr><td>Flash芯片 ID</td><td>%d</td></tr>"
                     "<tr><td>Flash大小</td><td>%d kB</td></tr>"
+#endif
                     "<tr><td>固件Flash大小</td><td>%d kB</td></tr>"
                     "<tr><td>固件大小</td><td>%d kB</td></tr>"),
-               ESP.getChipId(), ESP.getFlashChipId(), ESP.getFlashChipRealSize() / 1024, ESP.getFlashChipSize() / 1024, ESP.getSketchSize() / 1024);
+               ESP_getChipId(),
+#ifdef ESP8266
+               ESP.getFlashChipId(), ESP.getFlashChipRealSize() / 1024,
+#endif
+               ESP.getFlashChipSize() / 1024, ESP_getSketchSize() / 1024);
     server->sendContent_P(tmpData);
 
     uint8_t mac[6];
-    wifi_get_macaddr(STATION_IF, mac);
+    WiFi.macAddress(mac);
     snprintf_P(tmpData, sizeof(tmpData),
                PSTR("<tr><td>空闲程序空间</td><td>%d kB</td></tr>"
                     "<tr><td>内核和SDK版本</td><td>" ARDUINO_ESP8266_RELEASE "%s</td></tr>"
                     "<tr><td>重启原因</td><td>%s</td></tr>"
                     "<tr><td>MAC地址</td><td>%02X:%02X:%02X:%02X:%02X:%02X</td></tr>"
                     "</tbody></table>"),
-               ESP.getFreeSketchSpace() / 1024, ESP.getSdkVersion(), ESP.getResetReason().c_str(), mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+               ESP.getFreeSketchSpace() / 1024, ESP.getSdkVersion(), ESP_getResetReason().c_str(), mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
     server->sendContent_P(tmpData);
 
     snprintf_P(tmpData, sizeof(tmpData),
@@ -414,6 +417,7 @@ void Http::handledhcp()
     static_sn.fromString(netmask);
     static_gw.fromString(gateway);
 
+#ifdef ESP8266
     if (!(static_ip.isV4() && static_sn.isV4() && (!static_gw.isSet() || static_gw.isV4())))
     {
         server->send_P(200, PSTR("text/html"), PSTR("{\"code\":0,\"msg\":\"IP地址或者网关错误\"}"));
@@ -425,6 +429,7 @@ void Http::handledhcp()
         server->send_P(200, PSTR("text/html"), PSTR("{\"code\":0,\"msg\":\"网段错误\"}"));
         return;
     }
+#endif
 
     bool old = globalConfig.wifi.is_static;
     globalConfig.wifi.is_static = server->arg(F("dhcp")).equals(F("2"));
@@ -575,7 +580,7 @@ void Http::handleOperate()
     delay(200);
 
     Led::blinkLED(400, 4);
-    ESP.restart();
+    ESP_Restart();
 }
 
 void Http::handleOTA()
@@ -764,16 +769,32 @@ void Http::handleUpdate()
                 snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Bad Size Given"), _error);
             } else if(_error == UPDATE_ERROR_STREAM){
                 snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Stream Read Timeout"), _error);
+            } else if(_error == UPDATE_ERROR_MAGIC_BYTE){
+                snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Magic byte is wrong, not 0xE9"), _error);
+#ifdef ESP8266
             } else if(_error == UPDATE_ERROR_SIGN){
                 snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Signature verification failed"), _error);
             } else if(_error == UPDATE_ERROR_FLASH_CONFIG){
                 snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Flash config wrong real: %d IDE: %d"), _error,  ESP.getFlashChipRealSize(), ESP.getFlashChipSize());
             } else if(_error == UPDATE_ERROR_NEW_FLASH_CONFIG){
                 snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: new Flash config wrong real: %d"), _error, ESP.getFlashChipRealSize());
-            } else if(_error == UPDATE_ERROR_MAGIC_BYTE){
-                snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Magic byte is wrong, not 0xE9"), _error);
             } else if (_error == UPDATE_ERROR_BOOTSTRAP){
                 snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Invalid bootstrapping state, reset ESP8266 before updating"), _error);
+#else
+
+            } else if(_error == UPDATE_ERROR_MD5){
+                snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: MD5 Check Failed"), _error);
+            } else if(_error == UPDATE_ERROR_MAGIC_BYTE){
+                snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Wrong Magic Byte"), _error);
+            } else if(_error == UPDATE_ERROR_ACTIVATE){
+                snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Could Not Activate The Firmware"), _error);
+            } else if (_error == UPDATE_ERROR_NO_PARTITION){
+                snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Partition Could Not be Found"), _error);
+            } else if (_error == UPDATE_ERROR_BAD_ARGUMENT){
+                snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Bad Argument"), _error);
+            } else if (_error == UPDATE_ERROR_ABORT){
+                snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Aborted"), _error);
+#endif
             } else {
                 snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: UNKNOWN"), _error);
             }
@@ -790,7 +811,7 @@ void Http::handleUpdate()
             //server->send_P(200, PSTR("text/html"), PSTR("<meta charset='utf-8'/><meta http-equiv=\"refresh\" content=\"15;URL=/\">升级成功！正在重启 . . ."));
             delay(100);
             server->client().stop();
-            ESP.restart();
+            ESP_Restart();
         } }, [&]() {
                 HTTPUpload &upload = server->upload();
                 if (upload.status == UPLOAD_FILE_START)
@@ -800,9 +821,13 @@ void Http::handleUpdate()
                         Debug::AddInfo(PSTR("Unauthenticated Update"));
                         return;
                     }
-                    WiFiUDP::stopAll();
                     Debug::AddInfo(PSTR("Update: %s"), upload.filename.c_str());
+#ifdef ESP8266
+                    WiFiUDP::stopAll();
                     uint32_t maxSketchSpace = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
+#else
+                    uint32_t maxSketchSpace = UPDATE_SIZE_UNKNOWN;
+#endif
                     if (!Update.begin(maxSketchSpace, U_FLASH))//start with max available size
                     { 
                     }
@@ -835,7 +860,7 @@ void Http::begin()
         return;
     }
     isBegin = true;
-    server = new ESP8266WebServer();
+    server = new WebServer();
 
     server->on(F("/"), handleRoot);
 #ifndef DISABLE_MQTT
@@ -961,7 +986,7 @@ void Http::handleModuleSetting()
 #endif
         server->send_P(200, PSTR("text/html"), PSTR("{\"code\":1,\"msg\":\"修改了重要配置 . . . 正在重启中。\"}"));
         Led::blinkLED(400, 4);
-        ESP.restart();
+        ESP_Restart();
     }
     else
     {
@@ -986,11 +1011,11 @@ void Http::OTA(String url)
 {
     if (url.indexOf(F("%04d")) != -1)
     {
-        url.replace(F("%04d"), String(ESP.getChipId() & 0x1fff));
+        url.replace(F("%04d"), String(ESP_getChipId() & 0x1fff));
     }
     else if (url.indexOf(F("%d")) != -1)
     {
-        url.replace(F("%d"), String(ESP.getChipId()));
+        url.replace(F("%d"), String(ESP_getChipId()));
     }
     url.replace(F("%hostname%"), UID);
     url.replace(F("%module%"), module ? module->getModuleName() : F(""));
@@ -999,8 +1024,8 @@ void Http::OTA(String url)
     Debug::AddInfo(PSTR("OTA Url: %s"), url.c_str());
     Led::blinkLED(200, 5);
     WiFiClient OTAclient;
-    if (ESPhttpUpdate.update(OTAclient, url, (module ? module->getModuleVersion() : F(""))) == HTTP_UPDATE_FAILED)
+    if (ESPHTTPUpdate.update(OTAclient, url, (module ? module->getModuleVersion() : F(""))) == HTTP_UPDATE_FAILED)
     {
-        Debug::AddError(PSTR("HTTP_UPDATE_FAILD Error (%d): %s"), ESPhttpUpdate.getLastError(), ESPhttpUpdate.getLastErrorString().c_str());
+        Debug::AddError(PSTR("HTTP_UPDATE_FAILD Error (%d): %s"), ESPHTTPUpdate.getLastError(), ESPHTTPUpdate.getLastErrorString().c_str());
     }
 }

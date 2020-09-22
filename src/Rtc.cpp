@@ -1,6 +1,5 @@
-#include <ESP8266WiFi.h>
+#include "Common.h"
 #include "Rtc.h"
-#include "sntp.h"
 #include "Debug.h"
 
 RtcReboot Rtc::rtcReboot;
@@ -159,7 +158,7 @@ void Rtc::getNtp()
         uint32_t ntp_time = sntp_get_current_timestamp();
         if (ntp_time > 1451602800)
         {
-            utcTime = ntp_time;
+            utcTime = ntp_time + (3600 * 8); // 修正时区
             breakTime(utcTime, rtcTime);
             Debug::AddInfo(PSTR("NTP: %04d-%02d-%02d %02d:%02d:%02d"), rtcTime.year, rtcTime.month, rtcTime.day_of_month, rtcTime.hour, rtcTime.minute, rtcTime.second);
         }
@@ -168,7 +167,6 @@ void Rtc::getNtp()
 
 void Rtc::perSecondDo()
 {
-    bool isAdd = false;
     if (utcTime == 0 || perSecond % 600 == 0)
     {
         bitSet(operationFlag, 0);
@@ -183,21 +181,16 @@ void Rtc::perSecondDo()
 
 void Rtc::init()
 {
-    sntp_stop();
     if (globalConfig.wifi.ntp[0] != '\0')
     {
         Debug::AddInfo(PSTR("NTP Server: %s"), globalConfig.wifi.ntp);
-        sntp_setservername(0, globalConfig.wifi.ntp);
+        configTime(0, 0, globalConfig.wifi.ntp);
     }
     else
     {
         Debug::AddInfo(PSTR("NTP Server: default"));
-        sntp_setservername(0, (char *)"120.25.115.20");
-        sntp_setservername(1, (char *)"203.107.6.88");
-        sntp_setservername(2, (char *)"ntp3.aliyun.com");
+        configTime(0, 0, "120.25.115.20", "203.107.6.88", "ntp3.aliyun.com");
     }
-    sntp_set_timezone(8);
-    sntp_init();
     utcTime = 0;
 }
 
@@ -214,7 +207,11 @@ uint32_t Rtc::getRtcRebootCrc()
 
 void Rtc::rtcRebootLoad()
 {
+#ifdef ESP8266
     ESP.rtcUserMemoryRead(100 - sizeof(RtcReboot), (uint32_t *)&rtcReboot, sizeof(RtcReboot)); // 0x280
+#else
+    spiflash_read(SPI_FLASH_SEC_SIZE - sizeof(RtcReboot), (uint32_t *)&rtcReboot, sizeof(RtcReboot));
+#endif
     if (rtcReboot.valid != RTC_MEM_VALID)
     {
         memset(&rtcReboot, 0, sizeof(RtcReboot));
@@ -230,7 +227,11 @@ void Rtc::rtcRebootSave()
     if (getRtcRebootCrc() != rtcRebootCrc)
     {
         rtcReboot.valid = RTC_MEM_VALID;
+#ifdef ESP8266
         ESP.rtcUserMemoryWrite(100 - sizeof(RtcReboot), (uint32_t *)&rtcReboot, sizeof(RtcReboot));
+#else
+        spiflash_write(SPI_FLASH_SEC_SIZE - sizeof(RtcReboot), (uint32_t *)&rtcReboot, sizeof(RtcReboot));
+#endif
         rtcRebootCrc = getRtcRebootCrc();
     }
 }

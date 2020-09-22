@@ -1,13 +1,16 @@
 #include <WiFiClient.h>
-#include <ESP8266WiFi.h>
 #include <DNSServer.h>
 #include <Ticker.h>
+#include "Common.h"
 #include "WifiMgr.h"
 #include "Debug.h"
+#include "Http.h"
 
-WiFiClient WifiMgr::wifiClient;
+#ifdef ESP8266
 WiFiEventHandler WifiMgr::STAGotIP;
 //WiFiEventHandler WifiMgr::STADisconnected;
+#endif
+WiFiClient WifiMgr::wifiClient;
 bool WifiMgr::isDHCP = true;
 
 unsigned long WifiMgr::configPortalStart = 0;
@@ -40,8 +43,9 @@ void WifiMgr::setupWifi()
     WiFi.mode(WIFI_STA);
     WiFi.setAutoConnect(true);
     WiFi.setAutoReconnect(true);
-    WiFi.hostname(UID);
+    WIFI_setHostname(UID);
     Debug::AddInfo(PSTR("Connecting to %s %s Wifi"), globalConfig.wifi.ssid, globalConfig.wifi.pass);
+#ifdef ESP8266
     STAGotIP = WiFi.onStationModeGotIP([](const WiFiEventStationModeGotIP &event) {
 #ifdef WIFI_CONNECT_TIMEOUT
         connectStart = 0;
@@ -62,6 +66,20 @@ void WifiMgr::setupWifi()
         });
         */
     });
+#else
+    WiFi.setSleep(false);
+    WiFi.onEvent([](WiFiEvent_t event, WiFiEventInfo_t info) {
+#ifdef WIFI_CONNECT_TIMEOUT
+        connectStart = 0;
+#endif
+        Debug::AddInfo(PSTR("WiFi1 connected. SSID: %s IP address: %s"), WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
+        if (globalConfig.wifi.is_static && String(globalConfig.wifi.ip).equals(WiFi.localIP().toString()))
+        {
+            isDHCP = false;
+        }
+    },
+                 WiFiEvent_t::SYSTEM_EVENT_STA_GOT_IP);
+#endif
     if (globalConfig.wifi.is_static)
     {
         isDHCP = false;
@@ -94,10 +112,18 @@ void WifiMgr::setupWifiManager(bool resetSettings)
     }
     //WiFi.setAutoConnect(true);
     //WiFi.setAutoReconnect(true);
-    WiFi.hostname(UID);
+    WIFI_setHostname(UID);
+
+#ifdef ESP8266
     STAGotIP = WiFi.onStationModeGotIP([](const WiFiEventStationModeGotIP &event) {
         Debug::AddInfo(PSTR("WiFi2 connected. SSID: %s IP address: %s"), WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
     });
+#else
+    WiFi.onEvent([](WiFiEvent_t event, WiFiEventInfo_t info) {
+        Debug::AddInfo(PSTR("WiFi2 connected. SSID: %s IP address: %s"), WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
+    },
+                 WiFiEvent_t::SYSTEM_EVENT_STA_GOT_IP);
+#endif
 
     configPortalStart = millis();
     if (WiFi.isConnected())
@@ -148,6 +174,11 @@ void WifiMgr::loop()
     {
         return;
     }
+    else if (configPortalStart == 1)
+    {
+        ESP_Restart();
+        return;
+    }
     dnsServer->processNextRequest();
 
     if (connect)
@@ -168,9 +199,13 @@ void WifiMgr::loop()
         //	为了使WEB获取到IP 2秒后才关闭AP
         Ticker *ticker = new Ticker();
         ticker->attach(3, []() {
+#ifdef ESP8266
             WiFi.mode(WIFI_STA);
             Debug::AddInfo(PSTR("SET STA Mode"));
-            ESP.reset();
+            ESP_Restart();
+#else
+            configPortalStart = 1;
+#endif
         });
 
         Debug::AddInfo(PSTR("WiFi connected. SSID: %s IP address: %s"), WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
@@ -195,16 +230,20 @@ void WifiMgr::loop()
             //	为了使WEB获取到IP 2秒后才关闭AP
             Ticker *ticker = new Ticker();
             ticker->attach(3, []() {
+#ifdef ESP8266
                 WiFi.mode(WIFI_STA);
                 Debug::AddInfo(PSTR("SET STA Mode"));
-                ESP.reset();
+                ESP_Restart();
+#else
+            configPortalStart = 1;
+#endif
             });
         }
         else
         {
             Debug::AddInfo(PSTR("Wifi failed to connect and hit timeout. Rebooting..."));
             delay(3000);
-            ESP.reset(); // 重置，可能进入深度睡眠状态
+            ESP_Restart(); // 重置，可能进入深度睡眠状态
             delay(5000);
         }
     }

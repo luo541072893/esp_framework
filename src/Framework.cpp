@@ -25,7 +25,7 @@ void Framework::callback(char *topic, byte *payload, unsigned int length)
     }
     else if (strcmp(cmnd, "restart") == 0)
     {
-        ESP.reset();
+        ESP_Restart();
     }
     else if (module)
     {
@@ -102,7 +102,7 @@ void Framework::setup()
     else
     {
         uint8_t mac[6];
-        wifi_get_macaddr(STATION_IF, mac);
+        WiFi.macAddress(mac);
         sprintf(UID, "%s_%02x%02x%02x", module->getModuleName().c_str(), mac[3], mac[4], mac[5]);
     }
     Util::strlowr(UID);
@@ -116,15 +116,10 @@ void Framework::setup()
         Debug::AddError(PSTR("WRONG PUBSUBCLIENT LIBRARY USED PLEASE INSTALL THE ONE FROM OMG LIB FOLDER"));
     }
 
+    WifiMgr::connectWifi();
     if (rebootCount == 3)
     {
         module = NULL;
-
-        tickerPerSecond = new Ticker();
-        tickerPerSecond->attach(1, tickerPerSecondDo);
-
-        Http::begin();
-        WifiMgr::connectWifi();
     }
     else
     {
@@ -134,12 +129,12 @@ void Framework::setup()
         Mqtt::mqttSetLoopCallback(callback);
 #endif
         module->init();
-        tickerPerSecond = new Ticker();
-        tickerPerSecond->attach(1, tickerPerSecondDo);
-        Http::begin();
-        WifiMgr::connectWifi();
         Rtc::init();
     }
+    Http::begin();
+
+    tickerPerSecond = new Ticker();
+    tickerPerSecond->attach(1, tickerPerSecondDo);
 }
 
 void Framework::loop()

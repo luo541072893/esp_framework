@@ -1,5 +1,4 @@
-#include <c_types.h>
-#include <spi_flash.h>
+#include "Arduino.h"
 #include "Module.h"
 
 Module *module;
@@ -16,9 +15,6 @@ bool Config::isDelay = false;
 const uint16_t crcTalbe[] = {
     0x0000, 0xCC01, 0xD801, 0x1400, 0xF001, 0x3C00, 0x2800, 0xE401,
     0xA001, 0x6C00, 0x7800, 0xB401, 0x5000, 0x9C01, 0x8801, 0x4400};
-
-extern uint32_t _EEPROM_start; //See EEPROM.cpp
-#define EEPROM_PHYS_ADDR ((uint32_t)(&_EEPROM_start) - 0x40200000)
 
 /**
  * 计算Crc16
@@ -79,13 +75,17 @@ void Config::resetConfig()
 void Config::readConfig()
 {
     uint8_t buf[6] = {0};
+#ifdef ESP8266
     if (spi_flash_read(EEPROM_PHYS_ADDR, (uint32 *)buf, 6) != SPI_FLASH_RESULT_OK)
+#else
+    if (!spiflash_read(EEPROM_PHYS_ADDR, (uint32_t *)buf, 6))
+#endif
     {
     }
 
-    uint16 len;
+    uint16_t len;
     bool status = false;
-    uint16 cfg = (buf[0] << 8 | buf[1]);
+    uint16_t cfg = (buf[0] << 8 | buf[1]);
     if (cfg == GLOBAL_CFG_VERSION)
     {
         len = (buf[2] << 8 | buf[3]);
@@ -98,7 +98,11 @@ void Config::readConfig()
         //Debug::AddInfo(PSTR("readConfig . . . Len: %d Crc: %d"), len, nowCrc);
 
         uint8_t *data = (uint8_t *)malloc(len);
+#ifdef ESP8266
         if (spi_flash_read(EEPROM_PHYS_ADDR + 6, (uint32 *)data, len) == SPI_FLASH_RESULT_OK)
+#else
+        if (spiflash_read(EEPROM_PHYS_ADDR + 6, (uint32_t *)data, len))
+#endif
         {
             uint16_t crc = crc16(data, len);
             if (crc == nowCrc)
@@ -167,7 +171,11 @@ bool Config::saveConfig(bool isEverySecond)
 
     // 读取原来数据
     uint8_t *data = (uint8_t *)malloc(SPI_FLASH_SEC_SIZE);
+#ifdef ESP8266
     if (spi_flash_read(EEPROM_PHYS_ADDR, (uint32 *)data, SPI_FLASH_SEC_SIZE) != SPI_FLASH_RESULT_OK)
+#else
+    if (!spiflash_read(EEPROM_PHYS_ADDR, (uint32_t *)data, SPI_FLASH_SEC_SIZE))
+#endif
     {
         free(data);
         Debug::AddError(PSTR("saveConfig . . . Read EEPROM Data Error"));
@@ -187,7 +195,11 @@ bool Config::saveConfig(bool isEverySecond)
     memcpy(&data[6], buffer, len);
 
     // 擦写扇区
+#ifdef ESP8266
     if (spi_flash_erase_sector(EEPROM_PHYS_ADDR / SPI_FLASH_SEC_SIZE) != SPI_FLASH_RESULT_OK)
+#else
+    if (!spiflash_erase_sector(EEPROM_PHYS_ADDR / SPI_FLASH_SEC_SIZE))
+#endif
     {
         free(data);
         Debug::AddError(PSTR("saveConfig . . . Erase Sector Error"));
@@ -195,7 +207,11 @@ bool Config::saveConfig(bool isEverySecond)
     }
 
     // 写入数据
+#ifdef ESP8266
     if (spi_flash_write(EEPROM_PHYS_ADDR, (uint32 *)data, SPI_FLASH_SEC_SIZE) != SPI_FLASH_RESULT_OK)
+#else
+    if (!spiflash_write(EEPROM_PHYS_ADDR, (uint32_t *)data, SPI_FLASH_SEC_SIZE))
+#endif
     {
         free(data);
         Debug::AddError(PSTR("saveConfig . . . Write EEPROM Data Error"));

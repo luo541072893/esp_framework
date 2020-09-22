@@ -1,5 +1,6 @@
-#include <ESP8266WiFi.h>
+#ifdef USE_SYSLOG
 #include <WiFiUdp.h>
+#endif
 #include "Config.h"
 #include "Debug.h"
 #include "Rtc.h"

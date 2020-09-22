@@ -3,7 +3,6 @@
 #ifndef _MODULE_h
 #define _MODULE_h
 
-#include <ESP8266WebServer.h>
 #include "Config.h"
 #include "Led.h"
 #include "WifiMgr.h"
@@ -31,9 +30,9 @@ public:
     virtual void resetConfig();
     virtual void saveConfig(bool isEverySecond);
 
-    virtual void httpAdd(ESP8266WebServer *server);
-    virtual void httpHtml(ESP8266WebServer *server);
-    virtual String httpGetStatus(ESP8266WebServer *server);
+    virtual void httpAdd(WebServer *server);
+    virtual void httpHtml(WebServer *server);
+    virtual String httpGetStatus(WebServer *server);
 
 #ifndef DISABLE_MQTT
     virtual void mqttCallback(char *topic, char *payload, char *cmnd);

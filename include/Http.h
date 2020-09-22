@@ -4,7 +4,7 @@
 #define _HTTP_h
 
 #include "Arduino.h"
-#include <ESP8266WebServer.h>
+#include "Common.h"
 
 class Http
 {
@@ -29,7 +29,7 @@ private:
     static bool checkAuth();
 
 public:
-    static ESP8266WebServer *server;
+    static WebServer *server;
     static void begin();
     static void stop();
     static void loop();

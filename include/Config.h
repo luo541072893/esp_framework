@@ -8,13 +8,16 @@
 #include <pb_decode.h>
 #include <pb.h>
 #include "Arduino.h"
+#include "Common.h"
 #include "GlobalConfig.pb.h"
 
 #if PB_PROTO_HEADER_VERSION != 30
 #error Regenerate this file with the current version of nanopb generator.
 #endif
 
+#ifndef GLOBAL_CFG_VERSION
 #define GLOBAL_CFG_VERSION 1 // 1 - 999
+#endif
 
 //#define WIFI_SSID "qlwz"     // WiFi ssid
 //#define WIFI_PASS "" // WiFi 密码

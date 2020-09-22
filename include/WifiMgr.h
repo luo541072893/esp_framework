@@ -1,7 +1,7 @@
 // Wifi.h
 
-#ifndef _WIFIMRG_h
-#define _WIFIMRG_h
+#ifndef _WIFIMGR_h
+#define _WIFIMGR_h
 
 #include <WiFiClient.h>
 #include <DNSServer.h>
@@ -29,8 +29,10 @@ private:
 public:
     static unsigned long configPortalStart;
     static bool isDHCP;
+#ifdef ESP8266
     static WiFiEventHandler STAGotIP;
-    //static WiFiEventHandler STADisconnected;
+//static WiFiEventHandler STADisconnected;
+#endif
     static WiFiClient wifiClient;
     static void connectWifi();
     static void setupWifi();
