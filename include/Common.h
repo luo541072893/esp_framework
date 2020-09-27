@@ -9,14 +9,19 @@
 #ifdef ESP8266
 
 #include <ESP8266Wifi.h>
+#ifdef USE_ESP_ASYNC_WEBSERVER
+#include <ESPAsyncTCP.h>
+#else
+#include <ESP8266WebServer.h>
+#define AsyncWebServer ESP8266WebServer
+#endif
+
 #include <flash_hal.h>
 #include <ESP8266HTTPClient.h>
 #include <ESP8266httpUpdate.h>
-#include <ESP8266WebServer.h>
 #include "sntp.h"
 
 #define ESPHTTPUpdate ESPhttpUpdate
-#define WebServer ESP8266WebServer
 
 #define ESP_Restart() ESP.reset()
 #define ESP_getChipId() ESP.getChipId()
@@ -40,10 +45,15 @@ extern uint32_t _EEPROM_start; //See EEPROM.cpp
 \*********************************************************************************************/
 #ifdef ESP32
 
+#ifdef USE_ESP_ASYNC_WEBSERVER
+#include <AsyncTCP.h>
+#else
+#include <WebServer.h>
+#define AsyncWebServer WebServer
+#endif
 #include <Wifi.h>
 #include <esp_spi_flash.h>
 #include <nvs.h>
-#include <WebServer.h>
 #include <Update.h>
 #include <HTTPUpdate.h>
 #include <rom/rtc.h>
@@ -75,4 +85,18 @@ uint32_t pin2chan(uint32_t pin);
 void analogWrite(uint8_t pin, int val);
 extern uint8_t pwm_channel[8];
 #endif
+#endif
+
+#ifdef USE_ESP_ASYNC_WEBSERVER
+#include <ESPAsyncWebServer.h>
+#ifndef CONTENT_LENGTH_UNKNOWN
+#define CONTENT_LENGTH_UNKNOWN -1
+#endif
+#define WEB_SERVER_REQUEST AsyncWebServerRequest *server
+#define WEB_SERVER_REQUEST_PARAMETER std::placeholders::_1
+#define WEB_SERVER_REQUEST_PARAMETER2 std::placeholders::_1
+#else
+#define WEB_SERVER_REQUEST AsyncWebServer *server
+#define WEB_SERVER_REQUEST_PARAMETER server
+#define WEB_SERVER_REQUEST_PARAMETER2 theServer
 #endif

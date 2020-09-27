@@ -10,31 +10,35 @@ class Http
 {
 private:
     static bool isBegin;
-    static void handleRoot();
+    static void handleRoot(WEB_SERVER_REQUEST);
 #ifndef DISABLE_MQTT
-    static void handleMqtt();
+    static void handleMqtt(WEB_SERVER_REQUEST);
 #ifndef DISABLE_MQTT_DISCOVERY
-    static void handleDiscovery();
+    static void handleDiscovery(WEB_SERVER_REQUEST);
 #endif
 #endif
-    static void handledhcp();
-    static void handleScanWifi();
-    static void handleWifi();
-    static void handleOperate();
-    static void handleNotFound();
-    static void handleModuleSetting();
-    static void handleOTA();
-    static void handleGetStatus();
-    static void handleUpdate();
-    static void handleUpdateUpload();
-    static bool checkAuth();
+    static void handledhcp(WEB_SERVER_REQUEST);
+    static void handleScanWifi(WEB_SERVER_REQUEST);
+    static void handleWifi(WEB_SERVER_REQUEST);
+    static void handleOperate(WEB_SERVER_REQUEST);
+    static void handleNotFound(WEB_SERVER_REQUEST);
+    static void handleModuleSetting(WEB_SERVER_REQUEST);
+    static void handleOTA(WEB_SERVER_REQUEST);
+    static void handleGetStatus(WEB_SERVER_REQUEST);
+    static void handleUpdate(WEB_SERVER_REQUEST);
+#ifdef USE_ESP_ASYNC_WEBSERVER
+    static void handleUpdateUpload(WEB_SERVER_REQUEST, String filename, size_t index, uint8_t *data, size_t len, bool final);
+#else
+    static void handleUpdateUpload(WEB_SERVER_REQUEST);
+#endif
+    static bool checkAuth(WEB_SERVER_REQUEST);
 
 public:
-    static WebServer *server;
+    static AsyncWebServer *theServer;
     static void begin();
     static void stop();
     static void loop();
-    static bool captivePortal();
+    static bool captivePortal(WEB_SERVER_REQUEST);
 
     static void OTA(String url);
 };
