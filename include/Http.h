@@ -26,6 +26,7 @@ private:
     static void handleOTA();
     static void handleGetStatus();
     static void handleUpdate();
+    static void handleUpdateUpload();
     static bool checkAuth();
 
 public:

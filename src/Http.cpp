@@ -20,9 +20,7 @@ void Http::handleRoot()
     }
 
     server->setContentLength(CONTENT_LENGTH_UNKNOWN);
-    server->send(200, F("text/html"), "");
-    server->sendContent_P(
-        PSTR("<!DOCTYPE html><html lang='zh-cn'><head><meta charset='utf-8'/><meta name='viewport'content='width=device-width, initial-scale=1, user-scalable=no'/><title>"));
+    server->send_P(200, PSTR("text/html"), PSTR("<!DOCTYPE html><html lang='zh-cn'><head><meta charset='utf-8'/><meta name='viewport'content='width=device-width, initial-scale=1, user-scalable=no'/><title>"));
     server->sendContent(module ? module->getModuleCNName() : F("修复模式"));
     server->sendContent_P(
         PSTR("</title><style type='text/css'>body{font-family:-apple-system,BlinkMacSystemFont,'Microsoft YaHei',sans-serif;font-size:16px;color:#333;line-height:1.75}#body{margin:0 auto;width:80%;max-width:600px}@media screen and (max-width:900px){#body{width:98%}}#nav{text-align:center}#tab>div{display:none}#nav button{background:#eee;border:1px solid #ddd;padding:.7em 1em;cursor:pointer;z-index:1;margin-left:-1px;outline:0}#nav .active{background:#fff}table.gridtable{color:#333;border-width:1px;border-color:#ddd;border-collapse:collapse;margin:auto;margin-top:15px;width:100%}table.gridtable th{border-width:1.5px;padding:8px;border-style:solid;border-color:#ddd;background-color:#f5f5f5}table.gridtable td{border-width:1px;padding:8px;border-style:solid;border-color:#ddd;background-color:#fff}input,select{border:1px solid #ccc;padding:7px 0;border-radius:3px;padding-left:5px;-webkit-box-shadow:inset 0 1px 1px rgba(0,0,0,.075);box-shadow:inset 0 1px 1px rgba(0,0,0,.075);-webkit-transition:border-color ease-in-out .15s,-webkit-box-shadow ease-in-out .15s;-o-transition:border-color ease-in-out .15s,box-shadow ease-in-out .15s;transition:border-color ease-in-out .15s,box-shadow ease-in-out .15s}input:focus,select:focus{border-color:#66afe9;outline:0;-webkit-box-shadow:inset 0 1px 1px rgba(0,0,0,.075),0 0 8px rgba(102,175,233,.6);box-shadow:inset 0 1px 1px rgba(0,0,0,.075),0 0 8px rgba(102,175,233,.6)}#tab button{color:#fff;border-width:0;border-radius:3px;cursor:pointer;outline:0;font-size:17px;line-height:2.4rem;width:100%}#tab button[disabled]{cursor:not-allowed;filter:alpha(opacity=65);-webkit-box-shadow:none;box-shadow:none;opacity:.65}.btn-info{background-color:#5bc0de;border-color:#46b8da}.btn-info:hover{background-color:#31b0d5;border-color:#269abc}.btn-success{background-color:#5cb85c;border-color:#4cae4c}.btn-success:hover{background-color:#449d44;border-color:#398439}.btn-danger{background-color:#d9534f;border-color:#d43f3a}.btn-danger:hover{background-color:#c9302c;border-color:#ac2925}.alert{width:80%;padding:15px;border:1px solid transparent;border-radius:4px;position:fixed;top:10px;left:10%;z-index:999999;display:none}label.bui-radios-label input{position:absolute;opacity:0;visibility:hidden}label.bui-radios-label .bui-radios{display:inline-block;position:relative;width:13px;height:13px;background:#fff;border:1px solid #979797;border-radius:50%;vertical-align:-2px}label.bui-radios-label input:checked+.bui-radios:after{position:absolute;content:'';width:7px;height:7px;background-color:#fff;border-radius:50%;top:3px;left:3px}label.bui-radios-label input:checked+.bui-radios{background:#00b066;border:1px solid #00b066}label.bui-radios-label input:disabled+.bui-radios{background-color:#e8e8e8;border:solid 1px #979797}label.bui-radios-label input:disabled:checked+.bui-radios:after{background-color:#c1c1c1}label.bui-radios-label .bui-radios{-webkit-transition:background-color ease-out .3s;transition:background-color ease-out .3s}input[type='range']{width:80%;height:10px;border:0;background-color:#f0f0f0;border-radius:5px;position:relative;-webkit-appearance:none!important;outline:0}input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:#f40}.file{position:relative;display:inline-block;background:#d0eeff;border:1px solid #99d3f5;border-radius:4px;padding:4px 12px;overflow:hidden;color:#1e88c7;text-decoration:none;text-indent:0;line-height:20px}.file input{position:absolute;font-size:100px;right:0;top:0;opacity:0}.file:hover{background:#aadffd;border-color:#78c3f3;color:#004974;text-decoration:none}</style>"
@@ -600,10 +598,10 @@ void Http::handleNotFound()
     {
         return;
     }
+    server->setContentLength(CONTENT_LENGTH_UNKNOWN);
     server->sendHeader(PSTR("Cache-Control"), PSTR("no-cache, no-store, must-revalidate"));
     server->sendHeader(PSTR("Pragma"), PSTR("no-cache"));
     server->sendHeader(PSTR("Expires"), PSTR("-1"));
-    server->setContentLength(CONTENT_LENGTH_UNKNOWN);
 
     snprintf_P(tmpData, sizeof(tmpData), PSTR("File Not Found\n\nURI: %s\nMethod: %s\nArguments: %d\n"),
                server->uri().c_str(), server->method() == HTTP_GET ? PSTR("GET") : PSTR("POST"), server->args());
@@ -747,110 +745,145 @@ void Http::handleGetStatus()
 
 void Http::handleUpdate()
 {
-    // handler for the /update form POST (once file upload finishes)
-    server->on(
-        F("/update"), HTTP_POST, [&]() {
-        if (!checkAuth())
+    if (!checkAuth())
+    {
+        return;
+    }
+    if (Update.hasError())
+    {
+        uint8_t _error = Update.getError();
+        if (_error == UPDATE_ERROR_WRITE)
         {
-            return;
-        } 
-        if (Update.hasError())
+            snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Flash Write Failed"), _error);
+        }
+        else if (_error == UPDATE_ERROR_ERASE)
         {
-            uint8_t _error = Update.getError();
-            if(_error == UPDATE_ERROR_WRITE){
-                snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Flash Write Failed"), _error);
-            } else if(_error == UPDATE_ERROR_ERASE){
-                snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Flash Erase Failed"), _error);
-            } else if(_error == UPDATE_ERROR_READ){
-                snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Flash Read Failed"), _error);
-            } else if(_error == UPDATE_ERROR_SPACE){
-                snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Not Enough Space"), _error);
-            } else if(_error == UPDATE_ERROR_SIZE){
-                snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Bad Size Given"), _error);
-            } else if(_error == UPDATE_ERROR_STREAM){
-                snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Stream Read Timeout"), _error);
-            } else if(_error == UPDATE_ERROR_MAGIC_BYTE){
-                snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Magic byte is wrong, not 0xE9"), _error);
+            snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Flash Erase Failed"), _error);
+        }
+        else if (_error == UPDATE_ERROR_READ)
+        {
+            snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Flash Read Failed"), _error);
+        }
+        else if (_error == UPDATE_ERROR_SPACE)
+        {
+            snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Not Enough Space"), _error);
+        }
+        else if (_error == UPDATE_ERROR_SIZE)
+        {
+            snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Bad Size Given"), _error);
+        }
+        else if (_error == UPDATE_ERROR_STREAM)
+        {
+            snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Stream Read Timeout"), _error);
+        }
+        else if (_error == UPDATE_ERROR_MAGIC_BYTE)
+        {
+            snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Magic byte is wrong, not 0xE9"), _error);
 #ifdef ESP8266
-            } else if(_error == UPDATE_ERROR_SIGN){
-                snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Signature verification failed"), _error);
-            } else if(_error == UPDATE_ERROR_FLASH_CONFIG){
-                snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Flash config wrong real: %d IDE: %d"), _error,  ESP.getFlashChipRealSize(), ESP.getFlashChipSize());
-            } else if(_error == UPDATE_ERROR_NEW_FLASH_CONFIG){
-                snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: new Flash config wrong real: %d"), _error, ESP.getFlashChipRealSize());
-            } else if (_error == UPDATE_ERROR_BOOTSTRAP){
-                snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Invalid bootstrapping state, reset ESP8266 before updating"), _error);
+        }
+        else if (_error == UPDATE_ERROR_SIGN)
+        {
+            snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Signature verification failed"), _error);
+        }
+        else if (_error == UPDATE_ERROR_FLASH_CONFIG)
+        {
+            snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Flash config wrong real: %d IDE: %d"), _error, ESP.getFlashChipRealSize(), ESP.getFlashChipSize());
+        }
+        else if (_error == UPDATE_ERROR_NEW_FLASH_CONFIG)
+        {
+            snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: new Flash config wrong real: %d"), _error, ESP.getFlashChipRealSize());
+        }
+        else if (_error == UPDATE_ERROR_BOOTSTRAP)
+        {
+            snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Invalid bootstrapping state, reset ESP8266 before updating"), _error);
 #else
-
-            } else if(_error == UPDATE_ERROR_MD5){
-                snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: MD5 Check Failed"), _error);
-            } else if(_error == UPDATE_ERROR_MAGIC_BYTE){
-                snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Wrong Magic Byte"), _error);
-            } else if(_error == UPDATE_ERROR_ACTIVATE){
-                snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Could Not Activate The Firmware"), _error);
-            } else if (_error == UPDATE_ERROR_NO_PARTITION){
-                snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Partition Could Not be Found"), _error);
-            } else if (_error == UPDATE_ERROR_BAD_ARGUMENT){
-                snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Bad Argument"), _error);
-            } else if (_error == UPDATE_ERROR_ABORT){
-                snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Aborted"), _error);
+        }
+        else if (_error == UPDATE_ERROR_MD5)
+        {
+            snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: MD5 Check Failed"), _error);
+        }
+        else if (_error == UPDATE_ERROR_MAGIC_BYTE)
+        {
+            snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Wrong Magic Byte"), _error);
+        }
+        else if (_error == UPDATE_ERROR_ACTIVATE)
+        {
+            snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Could Not Activate The Firmware"), _error);
+        }
+        else if (_error == UPDATE_ERROR_NO_PARTITION)
+        {
+            snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Partition Could Not be Found"), _error);
+        }
+        else if (_error == UPDATE_ERROR_BAD_ARGUMENT)
+        {
+            snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Bad Argument"), _error);
+        }
+        else if (_error == UPDATE_ERROR_ABORT)
+        {
+            snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Aborted"), _error);
 #endif
-            } else {
-                snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: UNKNOWN"), _error);
-            }
-            Debug::AddLog(LOG_LEVEL_ERROR);
-            char out[150] = {0};
-            snprintf_P(out, sizeof(out), PSTR("{\"code\":0,\"msg\":\"%s\"}"), tmpData);
-            server->send_P(200, PSTR("text/html"), out);
         }
         else
         {
-            Config::saveConfig();
-            server->client().setNoDelay(true);
-            server->send_P(200, PSTR("text/html"), PSTR("{\"code\":1,\"msg\":\"升级成功，设备将自动重启，稍后刷新页面即可。\"}"));
-            //server->send_P(200, PSTR("text/html"), PSTR("<meta charset='utf-8'/><meta http-equiv=\"refresh\" content=\"15;URL=/\">升级成功！正在重启 . . ."));
-            delay(100);
-            server->client().stop();
-            ESP_Restart();
-        } }, [&]() {
-                HTTPUpload &upload = server->upload();
-                if (upload.status == UPLOAD_FILE_START)
-                {
-                    if (globalConfig.http.user[0] != 0 && globalConfig.http.pass[0] != 0 && server->client().localIP().toString() != "192.168.4.1" && !server->authenticate(globalConfig.http.user, globalConfig.http.pass))
-                    {
-                        Debug::AddInfo(PSTR("Unauthenticated Update"));
-                        return;
-                    }
-                    Debug::AddInfo(PSTR("Update: %s"), upload.filename.c_str());
+            snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: UNKNOWN"), _error);
+        }
+        Debug::AddLog(LOG_LEVEL_ERROR);
+        char out[150] = {0};
+        snprintf_P(out, sizeof(out), PSTR("{\"code\":0,\"msg\":\"%s\"}"), tmpData);
+        server->send_P(200, PSTR("text/html"), out);
+    }
+    else
+    {
+        Config::saveConfig();
+        server->client().setNoDelay(true);
+        server->send_P(200, PSTR("text/html"), PSTR("{\"code\":1,\"msg\":\"升级成功，设备将自动重启，稍后刷新页面即可。\"}"));
+        //server->send_P(200, PSTR("text/html"), PSTR("<meta charset='utf-8'/><meta http-equiv=\"refresh\" content=\"15;URL=/\">升级成功！正在重启 . . ."));
+        delay(100);
+        server->client().stop();
+        ESP_Restart();
+    }
+}
+
+void Http::handleUpdateUpload()
+{
+    HTTPUpload &upload = server->upload();
+    if (upload.status == UPLOAD_FILE_START)
+    {
+        if (globalConfig.http.user[0] != 0 && globalConfig.http.pass[0] != 0 && server->client().localIP().toString() != "192.168.4.1" && !server->authenticate(globalConfig.http.user, globalConfig.http.pass))
+        {
+            Debug::AddInfo(PSTR("Unauthenticated Update"));
+            return;
+        }
+        Debug::AddInfo(PSTR("Update: %s"), upload.filename.c_str());
 #ifdef ESP8266
-                    WiFiUDP::stopAll();
-                    uint32_t maxSketchSpace = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
+        WiFiUDP::stopAll();
+        uint32_t maxSketchSpace = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
 #else
-                    uint32_t maxSketchSpace = UPDATE_SIZE_UNKNOWN;
+        uint32_t maxSketchSpace = UPDATE_SIZE_UNKNOWN;
 #endif
-                    if (!Update.begin(maxSketchSpace, U_FLASH))//start with max available size
-                    { 
-                    }
-                }
-                else if (upload.status == UPLOAD_FILE_WRITE && !Update.hasError())
-                {
-                    if (Update.write(upload.buf, upload.currentSize) != upload.currentSize)
-                    {
-                    }
-                }
-                else if (upload.status == UPLOAD_FILE_END && !Update.hasError())
-                {
-                    if (Update.end(true))
-                    { 
-                        Debug::AddInfo(PSTR("Update Success: %u   Rebooting..."), upload.totalSize);
-                    }
-                }
-                else if (upload.status == UPLOAD_FILE_ABORTED)
-                {
-                    Update.end();
-                    Debug::AddInfo(PSTR("Update was aborted"));
-                }
-                delay(0); });
+        if (!Update.begin(maxSketchSpace, U_FLASH)) //start with max available size
+        {
+        }
+    }
+    else if (upload.status == UPLOAD_FILE_WRITE && !Update.hasError())
+    {
+        if (Update.write(upload.buf, upload.currentSize) != upload.currentSize)
+        {
+        }
+    }
+    else if (upload.status == UPLOAD_FILE_END && !Update.hasError())
+    {
+        if (Update.end(true))
+        {
+            Debug::AddInfo(PSTR("Update Success: %u   Rebooting..."), upload.totalSize);
+        }
+    }
+    else if (upload.status == UPLOAD_FILE_ABORTED)
+    {
+        Update.end();
+        Debug::AddInfo(PSTR("Update was aborted"));
+    }
+    delay(0);
 }
 
 void Http::begin()
@@ -860,7 +893,7 @@ void Http::begin()
         return;
     }
     isBegin = true;
-    server = new WebServer();
+    server = new WebServer(globalConfig.http.port);
 
     server->on(F("/"), handleRoot);
 #ifndef DISABLE_MQTT
@@ -876,14 +909,14 @@ void Http::begin()
     server->on(F("/module_setting"), handleModuleSetting);
     server->on(F("/ota"), handleOTA);
     server->on(F("/get_status"), handleGetStatus);
+    server->on(F("/update"), HTTP_POST, handleUpdate, handleUpdateUpload);
     server->onNotFound(handleNotFound);
-    handleUpdate();
 
     if (module)
     {
         module->httpAdd(server);
     }
-    server->begin(globalConfig.http.port);
+    server->begin();
     Debug::AddInfo(PSTR("HTTP server started port: %d"), globalConfig.http.port);
 }
 
