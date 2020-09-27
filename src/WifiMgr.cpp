@@ -105,9 +105,6 @@ void WifiMgr::setupWifiManager(bool resetSettings)
     {
         Debug::AddInfo(PSTR("WifiManager ResetSettings"));
         Config::resetConfig();
-
-        Debug::AddInfo(PSTR("settings invalidated"));
-        Debug::AddInfo(PSTR("THIS MAY CAUSE AP NOT TO START UP PROPERLY. YOU NEED TO COMMENT IT OUT AFTER ERASING THE DATA."));
         WiFi.disconnect(true);
     }
     //WiFi.setAutoConnect(true);
