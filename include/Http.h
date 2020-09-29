@@ -37,7 +37,9 @@ public:
     static AsyncWebServer *theServer;
     static void begin();
     static void stop();
+#ifndef USE_ESP_ASYNC_WEBSERVER
     static void loop();
+#endif
     static bool captivePortal(WEB_SERVER_REQUEST);
 
     static void OTA(String url);

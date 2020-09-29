@@ -983,15 +983,15 @@ void Http::stop()
     Debug::AddInfo(PSTR("HTTP server stoped"));
 }
 
+#ifndef USE_ESP_ASYNC_WEBSERVER
 void Http::loop()
 {
-#ifndef USE_ESP_ASYNC_WEBSERVER
     if (isBegin)
     {
         theServer->handleClient();
     }
-#endif
 }
+#endif
 
 bool Http::captivePortal(WEB_SERVER_REQUEST)
 {
