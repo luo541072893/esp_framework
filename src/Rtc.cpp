@@ -160,7 +160,7 @@ void Rtc::getNtp()
         {
             utcTime = ntp_time + (3600 * 8); // 修正时区
             breakTime(utcTime, rtcTime);
-            Debug::AddInfo(PSTR("NTP: %04d-%02d-%02d %02d:%02d:%02d"), rtcTime.year, rtcTime.month, rtcTime.day_of_month, rtcTime.hour, rtcTime.minute, rtcTime.second);
+            //Debug::AddInfo(PSTR("NTP: %04d-%02d-%02d %02d:%02d:%02d"), rtcTime.year, rtcTime.month, rtcTime.day_of_month, rtcTime.hour, rtcTime.minute, rtcTime.second);
         }
     }
 }

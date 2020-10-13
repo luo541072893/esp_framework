@@ -126,7 +126,9 @@ void Framework::setup()
     else
     {
 #ifndef DISABLE_MQTT
+#ifndef USE_ASYNC_MQTT_CLIENT
         Mqtt::setClient(WifiMgr::wifiClient);
+#endif
         Mqtt::mqttSetConnectedCallback(connectedCallback);
         Mqtt::mqttSetLoopCallback(callback);
 #endif

@@ -167,7 +167,7 @@ void Http::handleRoot(WEB_SERVER_REQUEST)
         PSTR("<form method='post' action='/module_setting' onsubmit='postform(this);return false'>"
              "<table class='gridtable'><thead><tr><th colspan='2'>模块设置</th></tr></thead><tbody>"));
 
-    snprintf_P(tmpData, sizeof(tmpData), PSTR("<tr><td>主机名</td><td><input type='text' name='uid' value='%s'>&nbsp;具有唯一性，留空默认</td></tr>"), UID);
+    snprintf_P(tmpData, sizeof(tmpData), PSTR("<tr><td>主机名</td><td><input type='text' name='uid' value='%s' maxlength=15>&nbsp;具有唯一性，留空默认</td></tr>"), UID);
     server->sendContent_P(tmpData);
 
     server->sendContent_P(

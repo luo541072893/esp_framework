@@ -160,14 +160,12 @@ void Mqtt::mqttSetConnectedCallback(MQTT_CONNECTED_CALLBACK_SIGNATURE)
 #endif
 }
 
+#ifndef USE_ASYNC_MQTT_CLIENT
 PubSubClient &Mqtt::setClient(Client &client)
 {
-#ifdef USE_ASYNC_MQTT_CLIENT
-    return mqttClient;
-#else
     return mqttClient.setClient(client);
-#endif
 }
+#endif
 
 bool Mqtt::publish(const char *topic, const char *payload, bool retained)
 {

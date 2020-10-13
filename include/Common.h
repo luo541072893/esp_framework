@@ -64,7 +64,9 @@ extern uint32_t _EEPROM_start; //See EEPROM.cpp
 #define ESPHTTPUpdate httpUpdate
 
 #define ESP_Restart() ESP.restart()
-#define WIFI_setHostname(aHostname) WiFi.setHostname(aHostname)
+#define WIFI_setHostname(aHostname)                     \
+    WiFi.config(INADDR_NONE, INADDR_NONE, INADDR_NONE); \
+    WiFi.setHostname(aHostname)
 
 #define isFlashInterfacePin(p) 0
 
