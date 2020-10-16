@@ -17,6 +17,7 @@ private:
     static void handleDiscovery(WEB_SERVER_REQUEST);
 #endif
 #endif
+    static void handleHttp(WEB_SERVER_REQUEST);
     static void handledhcp(WEB_SERVER_REQUEST);
     static void handleScanWifi(WEB_SERVER_REQUEST);
     static void handleWifi(WEB_SERVER_REQUEST);

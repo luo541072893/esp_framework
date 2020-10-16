@@ -41,6 +41,7 @@ void WifiMgr::setupWifi()
     WiFi.disconnect(true);  // Delete SDK wifi config
     delay(200);
     WiFi.mode(WIFI_STA);
+    delay(100);
     WiFi.setAutoConnect(true);
     WiFi.setAutoReconnect(true);
     WIFI_setHostname(UID);
@@ -169,6 +170,21 @@ void WifiMgr::loop()
 #endif
     if (configPortalStart == 0)
     {
+#ifdef ESP32
+        // ESP32偶尔不能连接wifi
+        if (perSecond % 60 == 0)
+        {
+            if (!connect && globalConfig.wifi.ssid[0] != '\0' && !WiFi.isConnected())
+            {
+                connect = true;
+                WiFi.begin(globalConfig.wifi.ssid, globalConfig.wifi.pass);
+            }
+        }
+        else
+        {
+            connect = false;
+        }
+#endif
         return;
     }
     else if (configPortalStart == 1)
@@ -201,7 +217,7 @@ void WifiMgr::loop()
             Debug::AddInfo(PSTR("SET STA Mode"));
             ESP_Restart();
 #else
-            configPortalStart = 1;
+                configPortalStart = 1;
 #endif
         });
 
@@ -232,7 +248,7 @@ void WifiMgr::loop()
                 Debug::AddInfo(PSTR("SET STA Mode"));
                 ESP_Restart();
 #else
-            configPortalStart = 1;
+                    configPortalStart = 1;
 #endif
             });
         }

@@ -19,14 +19,6 @@
 #define GLOBAL_CFG_VERSION 1 // 1 - 999
 #endif
 
-//#define WIFI_SSID "qlwz"     // WiFi ssid
-//#define WIFI_PASS "" // WiFi 密码
-
-//#define MQTT_SERVER "10.0.0.25"   // MQTTַ 地址
-//#define MQTT_PORT 1883            // MQTT 端口
-//#define MQTT_USER "mqtt"          // MQTT 用户名
-//#define MQTT_PASS "" // MQTT 密码
-
 #define MQTT_FULLTOPIC "%module%/%hostname%/%prefix%/" // MQTT 主题格式
 
 #define OTA_URL "http://10.0.0.50/esp/%module%.bin"

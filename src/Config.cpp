@@ -60,10 +60,22 @@ void Config::resetConfig()
 #ifdef MQTT_FULLTOPIC
     strcpy(globalConfig.mqtt.topic, MQTT_FULLTOPIC);
 #endif
+
+#ifdef HTTP_PORT
+    globalConfig.http.port = HTTP_PORT;
+#else
+    globalConfig.http.port = 80;
+#endif
+#ifdef HTTP_USER
+    strcpy(globalConfig.http.user, HTTP_USER);
+#endif
+#ifdef HTTP_PASS
+    strcpy(globalConfig.http.pass, HTTP_PASS);
+#endif
+
 #ifdef OTA_URL
     strcpy(globalConfig.http.ota_url, OTA_URL);
 #endif
-    globalConfig.http.port = 80;
     globalConfig.debug.type = 1;
 
     if (module)
