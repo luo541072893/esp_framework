@@ -170,7 +170,6 @@ void WifiMgr::loop()
 #endif
     if (configPortalStart == 0)
     {
-#ifdef ESP32
         // ESP32偶尔不能连接wifi
         if (perSecond % 60 == 0)
         {
@@ -184,7 +183,6 @@ void WifiMgr::loop()
         {
             connect = false;
         }
-#endif
         return;
     }
     else if (configPortalStart == 1)

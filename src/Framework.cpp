@@ -146,9 +146,7 @@ void Framework::loop()
     if (rebootCount == 3)
     {
         WifiMgr::loop();
-#ifndef USE_ESP_ASYNC_WEBSERVER
         Http::loop();
-#endif
     }
     else
     {
@@ -162,10 +160,8 @@ void Framework::loop()
         module->loop();
         yield();
         WifiMgr::loop();
-#ifndef USE_ESP_ASYNC_WEBSERVER
         yield();
         Http::loop();
-#endif
         yield();
         Rtc::loop();
     }

@@ -5,16 +5,16 @@
 #include "Module.h"
 #include "Rtc.h"
 
-AsyncWebServer *Http::theServer;
+WebServer *Http::server;
 bool Http::isBegin = false;
 
-void Http::handleRoot(WEB_SERVER_REQUEST)
+void Http::handleRoot()
 {
-    if (captivePortal(server))
+    if (captivePortal())
     {
         return;
     }
-    if (!checkAuth(server))
+    if (!checkAuth())
     {
         return;
     }
@@ -330,16 +330,12 @@ void Http::handleRoot(WEB_SERVER_REQUEST)
         server->sendContent_P(PSTR("setRadioValue('log_serial1', '1');"));
     }
     server->sendContent_P(PSTR("</script>"));
-
-#ifdef USE_ESP_ASYNC_WEBSERVER
-    server->sendContent();
-#endif
 }
 
 #ifndef DISABLE_MQTT
-void Http::handleMqtt(WEB_SERVER_REQUEST)
+void Http::handleMqtt()
 {
-    if (!checkAuth(server))
+    if (!checkAuth())
     {
         return;
     }
@@ -379,9 +375,9 @@ void Http::handleMqtt(WEB_SERVER_REQUEST)
 }
 
 #ifndef DISABLE_MQTT_DISCOVERY
-void Http::handleDiscovery(WEB_SERVER_REQUEST)
+void Http::handleDiscovery()
 {
-    if (!checkAuth(server))
+    if (!checkAuth())
     {
         return;
     }
@@ -405,9 +401,9 @@ void Http::handleDiscovery(WEB_SERVER_REQUEST)
 #endif
 #endif
 
-void Http::handleHttp(WEB_SERVER_REQUEST)
+void Http::handleHttp()
 {
-    if (!checkAuth(server))
+    if (!checkAuth())
     {
         return;
     }
@@ -418,9 +414,9 @@ void Http::handleHttp(WEB_SERVER_REQUEST)
     server->send_P(200, PSTR("text/html"), PSTR("{\"code\":1,\"msg\":\"设置WEB授权成功\"}"));
 }
 
-void Http::handledhcp(WEB_SERVER_REQUEST)
+void Http::handledhcp()
 {
-    if (!checkAuth(server))
+    if (!checkAuth())
     {
         return;
     }
@@ -481,9 +477,9 @@ void Http::handledhcp(WEB_SERVER_REQUEST)
     }
 }
 
-void Http::handleScanWifi(WEB_SERVER_REQUEST)
+void Http::handleScanWifi()
 {
-    if (!checkAuth(server))
+    if (!checkAuth())
     {
         return;
     }
@@ -563,15 +559,11 @@ void Http::handleScanWifi(WEB_SERVER_REQUEST)
     }
 
     server->sendContent_P(PSTR("]}}"));
-
-#ifdef USE_ESP_ASYNC_WEBSERVER
-    server->sendContent();
-#endif
 }
 
-void Http::handleWifi(WEB_SERVER_REQUEST)
+void Http::handleWifi()
 {
-    if (!checkAuth(server))
+    if (!checkAuth())
     {
         return;
     }
@@ -597,9 +589,9 @@ void Http::handleWifi(WEB_SERVER_REQUEST)
     }
 }
 
-void Http::handleOperate(WEB_SERVER_REQUEST)
+void Http::handleOperate()
 {
-    if (!checkAuth(server))
+    if (!checkAuth())
     {
         return;
     }
@@ -620,9 +612,9 @@ void Http::handleOperate(WEB_SERVER_REQUEST)
     ESP_Restart();
 }
 
-void Http::handleOTA(WEB_SERVER_REQUEST)
+void Http::handleOTA()
 {
-    if (!checkAuth(server))
+    if (!checkAuth())
     {
         return;
     }
@@ -631,9 +623,9 @@ void Http::handleOTA(WEB_SERVER_REQUEST)
     Http::OTA(String(globalConfig.http.ota_url));
 }
 
-void Http::handleNotFound(WEB_SERVER_REQUEST)
+void Http::handleNotFound()
 {
-    if (captivePortal(server))
+    if (captivePortal())
     {
         return;
     }
@@ -650,15 +642,11 @@ void Http::handleNotFound(WEB_SERVER_REQUEST)
         snprintf_P(tmpData, sizeof(tmpData), PSTR(" %s: %s\n"), server->argName(i).c_str(), server->arg(i).c_str());
         server->sendContent_P(tmpData);
     }
-
-#ifdef USE_ESP_ASYNC_WEBSERVER
-    server->sendContent();
-#endif
 }
 
-void Http::handleGetStatus(WEB_SERVER_REQUEST)
+void Http::handleGetStatus()
 {
-    if (!checkAuth(server))
+    if (!checkAuth())
     {
         return;
     }
@@ -784,15 +772,11 @@ void Http::handleGetStatus(WEB_SERVER_REQUEST)
 #else
     server->sendContent_P(PSTR("}}"));
 #endif
-
-#ifdef USE_ESP_ASYNC_WEBSERVER
-    server->sendContent();
-#endif
 }
 
-void Http::handleUpdate(WEB_SERVER_REQUEST)
+void Http::handleUpdate()
 {
-    if (!checkAuth(server))
+    if (!checkAuth())
     {
         return;
     }
@@ -889,39 +873,7 @@ void Http::handleUpdate(WEB_SERVER_REQUEST)
     }
 }
 
-#ifdef USE_ESP_ASYNC_WEBSERVER
-void Http::handleUpdateUpload(WEB_SERVER_REQUEST, String filename, size_t index, uint8_t *data, size_t len, bool final)
-{
-    if (!index)
-    {
-        Debug::AddInfo(PSTR("Update Start: %s"), filename.c_str());
-        //Update.runAsync(true);
-#ifdef ESP8266
-        WiFiUDP::stopAll();
-        uint32_t maxSketchSpace = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
-#else
-        uint32_t maxSketchSpace = UPDATE_SIZE_UNKNOWN;
-#endif
-        if (!Update.begin(maxSketchSpace, U_FLASH)) //start with max available size
-        {
-        }
-    }
-    if (!Update.hasError())
-    {
-        if (Update.write(data, len) != len)
-        {
-        }
-    }
-    if (final)
-    {
-        if (Update.end(true))
-        {
-            Debug::AddInfo(PSTR("Update Success: %u   Rebooting..."), index + len);
-        }
-    }
-}
-#else
-void Http::handleUpdateUpload(WEB_SERVER_REQUEST)
+void Http::handleUpdateUpload()
 {
     HTTPUpload &upload = server->upload();
     if (upload.status == UPLOAD_FILE_START)
@@ -962,7 +914,6 @@ void Http::handleUpdateUpload(WEB_SERVER_REQUEST)
     }
     delay(0);
 }
-#endif
 
 void Http::begin()
 {
@@ -971,35 +922,31 @@ void Http::begin()
         return;
     }
     isBegin = true;
-    theServer = new AsyncWebServer(globalConfig.http.port);
+    server = new WebServer(globalConfig.http.port);
 
-    theServer->on(F("/"), std::bind(handleRoot, WEB_SERVER_REQUEST_PARAMETER2));
+    server->on(F("/"), handleRoot);
 #ifndef DISABLE_MQTT
-    theServer->on(F("/mqtt"), std::bind(handleMqtt, WEB_SERVER_REQUEST_PARAMETER2));
+    server->on(F("/mqtt"), handleMqtt);
 #ifndef DISABLE_MQTT_DISCOVERY
-    theServer->on(F("/discovery"), std::bind(handleDiscovery, WEB_SERVER_REQUEST_PARAMETER2));
+    server->on(F("/discovery"), handleDiscovery);
 #endif
 #endif
-    theServer->on(F("/http"), std::bind(handleHttp, WEB_SERVER_REQUEST_PARAMETER2));
-    theServer->on(F("/dhcp"), std::bind(handledhcp, WEB_SERVER_REQUEST_PARAMETER2));
-    theServer->on(F("/scan_wifi"), std::bind(handleScanWifi, WEB_SERVER_REQUEST_PARAMETER2));
-    theServer->on(F("/wifi"), std::bind(handleWifi, WEB_SERVER_REQUEST_PARAMETER2));
-    theServer->on(F("/operate"), std::bind(handleOperate, WEB_SERVER_REQUEST_PARAMETER2));
-    theServer->on(F("/module_setting"), std::bind(handleModuleSetting, WEB_SERVER_REQUEST_PARAMETER2));
-    theServer->on(F("/ota"), std::bind(handleOTA, WEB_SERVER_REQUEST_PARAMETER2));
-    theServer->on(F("/get_status"), std::bind(handleGetStatus, WEB_SERVER_REQUEST_PARAMETER2));
-#ifdef USE_ESP_ASYNC_WEBSERVER
-    theServer->on(F("/update"), HTTP_POST, handleUpdate, handleUpdateUpload);
-#else
-    theServer->on(F("/update"), HTTP_POST, std::bind(handleUpdate, WEB_SERVER_REQUEST_PARAMETER2), std::bind(handleUpdateUpload, WEB_SERVER_REQUEST_PARAMETER2));
-#endif
-    theServer->onNotFound(std::bind(handleNotFound, WEB_SERVER_REQUEST_PARAMETER2));
+    server->on(F("/http"), handleHttp);
+    server->on(F("/dhcp"), handledhcp);
+    server->on(F("/scan_wifi"), handleScanWifi);
+    server->on(F("/wifi"), handleWifi);
+    server->on(F("/operate"), handleOperate);
+    server->on(F("/module_setting"), handleModuleSetting);
+    server->on(F("/ota"), handleOTA);
+    server->on(F("/get_status"), handleGetStatus);
+    server->on(F("/update"), HTTP_POST, handleUpdate, handleUpdateUpload);
+    server->onNotFound(handleNotFound);
 
     if (module)
     {
-        module->httpAdd(theServer);
+        module->httpAdd(server);
     }
-    theServer->begin();
+    server->begin();
     Debug::AddInfo(PSTR("HTTP server started port: %d"), globalConfig.http.port);
 }
 
@@ -1009,42 +956,34 @@ void Http::stop()
     {
         return;
     }
-#ifndef USE_ESP_ASYNC_WEBSERVER
-    theServer->stop();
-#endif
+    server->stop();
     Debug::AddInfo(PSTR("HTTP server stoped"));
 }
 
-#ifndef USE_ESP_ASYNC_WEBSERVER
 void Http::loop()
 {
     if (isBegin)
     {
-        theServer->handleClient();
+        server->handleClient();
     }
 }
-#endif
 
-bool Http::captivePortal(WEB_SERVER_REQUEST)
+bool Http::captivePortal()
 {
     if (!WifiMgr::isIp(server->hostHeader()))
     {
         //Debug::AddInfo(PSTR("Request redirected to captive portal"));
-#ifdef USE_ESP_ASYNC_WEBSERVER
-        server->redirect(String(F("http://")) + WiFi.softAPIP().toString());
-#else
         server->sendHeader(F("Location"), String(F("http://")) + server->client().localIP().toString(), true);
         server->send(302, F("text/plain"), ""); // Empty content inhibits Content-length header so we have to close the socket ourselves.
         server->client().stop();                // Stop is needed because we sent no content length
-#endif
         return true;
     }
     return false;
 }
 
-void Http::handleModuleSetting(WEB_SERVER_REQUEST)
+void Http::handleModuleSetting()
 {
-    if (!checkAuth(server))
+    if (!checkAuth())
     {
         return;
     }
@@ -1118,15 +1057,10 @@ void Http::handleModuleSetting(WEB_SERVER_REQUEST)
     }
 }
 
-bool Http::checkAuth(WEB_SERVER_REQUEST)
+bool Http::checkAuth()
 {
-#ifdef USE_ESP_ASYNC_WEBSERVER
-    if (ON_AP_FILTER(server))
-        return true;
-#else
     if (server->client().localIP().toString() == F("192.168.4.1"))
         return true;
-#endif
     if (globalConfig.http.user[0] != 0 && globalConfig.http.pass[0] != 0)
     {
         if (!server->authenticate(globalConfig.http.user, globalConfig.http.pass))

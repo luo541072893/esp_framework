@@ -30,9 +30,9 @@ public:
     virtual void resetConfig();
     virtual void saveConfig(bool isEverySecond);
 
-    virtual void httpAdd(AsyncWebServer *server);
-    virtual void httpHtml(WEB_SERVER_REQUEST);
-    virtual String httpGetStatus(WEB_SERVER_REQUEST);
+    virtual void httpAdd(WebServer *server);
+    virtual void httpHtml(WebServer *server);
+    virtual String httpGetStatus(WebServer *server);
 
 #ifndef DISABLE_MQTT
     virtual void mqttCallback(char *topic, char *payload, char *cmnd);
