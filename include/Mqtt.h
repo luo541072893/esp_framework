@@ -6,15 +6,9 @@
 
 #include "Arduino.h"
 
-#ifdef USE_ASYNC_MQTT_CLIENT
-#include <AsyncMqttClient.h>
-#define PubSubClient AsyncMqttClient
-#define MQTT_CALLBACK_SIGNATURE std::function<void(char *, uint8_t *, unsigned int)> callback
-#else
 #define MQTT_SOCKET_TIMEOUT 5
 #define MQTT_MAX_PACKET_SIZE 768
 #include <PubSubClient.h>
-#endif
 
 #define MQTT_CONNECTED_CALLBACK_SIGNATURE std::function<void()> connectedcallback
 
@@ -28,10 +22,6 @@ protected:
 public:
     static PubSubClient mqttClient;
     static MQTT_CONNECTED_CALLBACK_SIGNATURE;
-#ifdef USE_ASYNC_MQTT_CLIENT
-    static MQTT_CALLBACK_SIGNATURE;
-    static char mqttwill[80];
-#endif
 
     static uint32_t lastReconnectAttempt; // 最后尝试重连时间
     static uint32_t kMqttReconnectTime;   // 重新连接尝试之间的延迟（ms）
@@ -46,9 +36,7 @@ public:
     static String getStatTopic(String topic);
     static String getTeleTopic(String topic);
 
-#ifndef USE_ASYNC_MQTT_CLIENT
     static PubSubClient &setClient(Client &client);
-#endif
 
     static bool publish(String topic, const char *payload, bool retained = false) { return publish(topic.c_str(), payload, retained); };
     static bool publish(const char *topic, const char *payload, bool retained = false);

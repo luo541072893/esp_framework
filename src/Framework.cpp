@@ -111,12 +111,10 @@ void Framework::setup()
     // Debug::AddInfo(PSTR("Config Len: %d"), GlobalConfigMessage_size + 6);
 
     //Config::resetConfig();
-#ifndef USE_ASYNC_MQTT_CLIENT
     if (MQTT_MAX_PACKET_SIZE == 128)
     {
         Debug::AddError(PSTR("WRONG PUBSUBCLIENT LIBRARY USED PLEASE INSTALL THE ONE FROM OMG LIB FOLDER"));
     }
-#endif
 
     WifiMgr::connectWifi();
     if (rebootCount == 3)
@@ -126,9 +124,7 @@ void Framework::setup()
     else
     {
 #ifndef DISABLE_MQTT
-#ifndef USE_ASYNC_MQTT_CLIENT
         Mqtt::setClient(WifiMgr::wifiClient);
-#endif
         Mqtt::mqttSetConnectedCallback(connectedCallback);
         Mqtt::mqttSetLoopCallback(callback);
 #endif
