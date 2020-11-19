@@ -2,6 +2,7 @@
 
 #include "Mqtt.h"
 #include "Module.h"
+#include "Rtc.h"
 
 uint8_t Mqtt::operationFlag = 0;
 PubSubClient Mqtt::mqttClient;
@@ -34,7 +35,7 @@ bool Mqtt::mqttConnect()
         availability();
         if (globalConfig.mqtt.interval > 0)
         {
-            doReportHeartbeat();
+            doReportInfo();
         }
         if (connectedcallback != NULL)
         {
@@ -48,13 +49,13 @@ bool Mqtt::mqttConnect()
     return mqttClient.connected();
 }
 
-void Mqtt::doReportHeartbeat()
+void Mqtt::doReportInfo()
 {
     char message[250];
-    sprintf(message, PSTR("{\"UID\":\"%s\",\"SSID\":\"%s\",\"RSSI\":\"%s\",\"Version\":\"%s\",\"ip\":\"%s\",\"mac\":\"%s\",\"freeMem\":%d,\"uptime\":%d}"),
-            UID, WiFi.SSID().c_str(), String(WiFi.RSSI()).c_str(), (module ? module->getModuleVersion().c_str() : PSTR("0")), WiFi.localIP().toString().c_str(), WiFi.macAddress().c_str(), ESP.getFreeHeap(), millis() / 1000);
+    sprintf(message, PSTR("{\"uid\":\"%s\",\"ssid\":\"%s\",\"rssi\":\"%s\",\"version\":\"%s\",\"ip\":\"%s\",\"mac\":\"%s\",\"freemem\":%d,\"uptime\":%d,\"buildtime\":\"%s\"}"),
+            UID, WiFi.SSID().c_str(), String(WiFi.RSSI()).c_str(), (module ? module->getModuleVersion().c_str() : PSTR("0")), WiFi.localIP().toString().c_str(), WiFi.macAddress().c_str(), ESP.getFreeHeap(), millis() / 1000, Rtc::GetBuildDateAndTime().c_str());
     //Debug::AddInfo(PSTR("%s"), message);
-    publish(getTeleTopic(F("HEARTBEAT")), message);
+    publish(getTeleTopic(F("info")), message);
 }
 
 void Mqtt::availability()
@@ -93,7 +94,7 @@ void Mqtt::loop()
             bitClear(operationFlag, 0);
             if (globalConfig.mqtt.interval > 0 && (perSecond % globalConfig.mqtt.interval) == 0)
             {
-                doReportHeartbeat();
+                doReportInfo();
             }
             if (perSecond % 3609 == 0)
             {

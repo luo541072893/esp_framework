@@ -603,6 +603,9 @@ void Http::handleOperate()
     else if (d == F("2"))
     {
         Config::resetConfig();
+#ifdef WIFI_SSID
+        strcpy(globalConfig.uid, UID);
+#endif
         Config::saveConfig();
         server->send_P(200, PSTR("text/html"), PSTR("{\"code\":1,\"msg\":\"正在重置模块 . . . 设备将会重启。\"}"));
     }

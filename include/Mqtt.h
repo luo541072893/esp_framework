@@ -17,7 +17,7 @@ class Mqtt
 protected:
     static String getTopic(uint8_t prefix, String subtopic);
     static uint8_t operationFlag;
-    static void doReportHeartbeat();
+    static void doReportInfo();
 
 public:
     static PubSubClient mqttClient;
