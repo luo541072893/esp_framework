@@ -156,4 +156,63 @@ void analogWrite(uint8_t pin, int val)
     uint8_t channel = pin2chan(pin);
     ledcWrite(channel + PWM_CHANNEL_OFFSET, val);
 }
+
+int8_t readUserData(size_t src_offset, void *dst, size_t size)
+{
+    const esp_partition_t *find_partition = esp_partition_find_first((esp_partition_type_t)0x40, (esp_partition_subtype_t)0x0, NULL);
+    if (find_partition == NULL)
+    {
+        Serial.print("No partition found!");
+        return -1;
+    }
+
+    if (esp_partition_read(find_partition, src_offset, dst, size) != ESP_OK)
+    {
+        Serial.print("Read partition data error");
+        return -2;
+    }
+    return 0;
+}
+
+int8_t writeUserData(size_t dst_offset, const void *src, size_t size)
+{
+    const esp_partition_t *find_partition = esp_partition_find_first((esp_partition_type_t)0x40, (esp_partition_subtype_t)0x0, NULL);
+    if (find_partition == NULL)
+    {
+        Serial.print("No partition found!");
+        return -1;
+    }
+
+    if (dst_offset + size > find_partition->size)
+    {
+        Serial.print("error size");
+        return -1;
+    }
+
+    uint8_t sector = (dst_offset / SPI_FLASH_SEC_SIZE);
+    uint8_t copy[SPI_FLASH_SEC_SIZE];
+
+    if (esp_partition_read(find_partition, sector * SPI_FLASH_SEC_SIZE, copy, SPI_FLASH_SEC_SIZE) != ESP_OK)
+    {
+        Serial.print("Read partition data error");
+        return -2;
+    }
+
+    if (esp_partition_erase_range(find_partition, sector * SPI_FLASH_SEC_SIZE, SPI_FLASH_SEC_SIZE) != ESP_OK)
+    {
+        Serial.print("Erase partition error");
+        return -3;
+    }
+
+    memcpy(&copy[dst_offset % SPI_FLASH_SEC_SIZE], src, size);
+
+    if (esp_partition_write(find_partition, sector * SPI_FLASH_SEC_SIZE, copy, SPI_FLASH_SEC_SIZE) != ESP_OK)
+    {
+        Serial.print("Write partition data error");
+        return -4;
+    }
+
+    return 0;
+}
+
 #endif

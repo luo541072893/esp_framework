@@ -30,7 +30,7 @@
 #define spiflash_write(addr, data, size) (spi_flash_write((addr), (data), (size)) == SPI_FLASH_RESULT_OK)
 #define spiflash_erase_sector(addr) (spi_flash_erase_sector((addr) / SPI_FLASH_SEC_SIZE) == SPI_FLASH_RESULT_OK)
 
-extern uint32_t _EEPROM_start; //See EEPROM.cpp
+extern "C" uint32_t _EEPROM_start; //See EEPROM.cpp
 #define EEPROM_PHYS_ADDR ((uint32_t)(&_EEPROM_start) - 0x40200000)
 
 #endif
@@ -71,6 +71,9 @@ String ESP32GetResetReason(uint32_t cpu_no);
 String ESP_getResetReason(void);
 uint32_t ESP_getChipId(void);
 uint32_t ESP_getSketchSize(void);
+
+int8_t readUserData(size_t src_offset, void *dst, size_t size);
+int8_t writeUserData(size_t dst_offset, const void *src, size_t size);
 
 #define PWM_CHANNEL_OFFSET 8
 uint32_t pin2chan(uint32_t pin);
