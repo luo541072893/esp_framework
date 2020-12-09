@@ -30,6 +30,8 @@
 #define spiflash_write(addr, data, size) (spi_flash_write((addr), (data), (size)) == SPI_FLASH_RESULT_OK)
 #define spiflash_erase_sector(addr) (spi_flash_erase_sector((addr) / SPI_FLASH_SEC_SIZE) == SPI_FLASH_RESULT_OK)
 
+#define PortUdp_write(p,n) PortUdp.write(p, n)
+
 extern "C" uint32_t _EEPROM_start; //See EEPROM.cpp
 #define EEPROM_PHYS_ADDR ((uint32_t)(&_EEPROM_start) - 0x40200000)
 
@@ -48,6 +50,7 @@ extern "C" uint32_t _EEPROM_start; //See EEPROM.cpp
 #include <HTTPUpdate.h>
 #include <rom/rtc.h>
 #include <EEPROM.h>
+#include <WiFiUdp.h>
 
 #define ARDUINO_ESP8266_RELEASE ""
 #define EEPROM_PHYS_ADDR 0
@@ -64,6 +67,8 @@ bool spiflash_init();
 bool spiflash_erase_sector(size_t sector);
 bool spiflash_write(size_t dest_addr, const void *src, size_t size);
 bool spiflash_read(size_t src_addr, void *dest, size_t size);
+
+#define PortUdp_write(p, n) PortUdp.write((const uint8_t *)p, n)
 
 uint32_t sntp_get_current_timestamp();
 

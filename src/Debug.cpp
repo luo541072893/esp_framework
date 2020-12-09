@@ -9,11 +9,12 @@
 uint8_t Debug::webLogIndex = 1;
 char Debug::webLog[WEB_LOG_SIZE] = {'\0'};
 #endif
+
 #ifdef USE_SYSLOG
 IPAddress Debug::ip;
+WiFiUDP PortUdp;
 #endif
 
-WiFiUDP Udp;
 size_t Debug::strchrspn(const char *str1, int character)
 {
     size_t ret = 0;
@@ -65,7 +66,7 @@ void Debug::Syslog()
     {
         WiFi.hostByName(globalConfig.debug.server, ip);
     }
-    if (Udp.beginPacket(ip, globalConfig.debug.port))
+    if (PortUdp.beginPacket(ip, globalConfig.debug.port))
     {
         char syslog_preamble[64]; // Hostname + Id
 
@@ -73,8 +74,8 @@ void Debug::Syslog()
         memmove(tmpData + strlen(syslog_preamble), tmpData, sizeof(tmpData) - strlen(syslog_preamble));
         tmpData[sizeof(tmpData) - 1] = '\0';
         memcpy(tmpData, syslog_preamble, strlen(syslog_preamble));
-        Udp.write(tmpData, strlen(tmpData));
-        Udp.endPacket();
+        PortUdp_write(tmpData, strlen(tmpData));
+        PortUdp.endPacket();
         delay(1); // Add time for UDP handling (#5512)
     }
 }
