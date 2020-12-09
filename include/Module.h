@@ -9,7 +9,7 @@
 #ifndef DISABLE_MQTT
 #include "Mqtt.h"
 #endif
-#include "Debug.h"
+#include "Log.h"
 #include "Util.h"
 
 class Module

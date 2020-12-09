@@ -699,20 +699,20 @@ void Http::handleGetStatus()
     {
         counter = server->arg(F("i")).toInt();
     }
-    snprintf_P(tmpData, sizeof(tmpData), PSTR(",\"logindex\":%d,\"log\":\""), Debug::webLogIndex);
+    snprintf_P(tmpData, sizeof(tmpData), PSTR(",\"logindex\":%d,\"log\":\""), Log::webLogIndex);
     server->sendContent_P(tmpData);
-    if (counter != Debug::webLogIndex)
+    if (counter != Log::webLogIndex)
     {
         if (!counter)
         {
-            counter = Debug::webLogIndex;
+            counter = Log::webLogIndex;
             cflg = false;
         }
         do
         {
             char *tmp;
             uint16_t len;
-            Debug::GetLog(counter, &tmp, &len);
+            Log::GetLog(counter, &tmp, &len);
             if (len)
             {
                 if (cflg)
@@ -769,7 +769,7 @@ void Http::handleGetStatus()
             {
                 counter++;
             } // Skip log index 0 as it is not allowed
-        } while (counter != Debug::webLogIndex);
+        } while (counter != Log::webLogIndex);
     }
     server->sendContent_P(PSTR("\"}}"));
 #else
@@ -861,7 +861,7 @@ void Http::handleUpdate()
         {
             snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: UNKNOWN"), _error);
         }
-        Debug::AddLog(LOG_LEVEL_ERROR);
+        Log::Record(LOG_LEVEL_ERROR);
         char out[150] = {0};
         snprintf_P(out, sizeof(out), PSTR("{\"code\":0,\"msg\":\"%s\"}"), tmpData);
         server->send_P(200, PSTR("text/html"), out);
@@ -883,10 +883,10 @@ void Http::handleUpdateUpload()
     {
         if (globalConfig.http.user[0] != 0 && globalConfig.http.pass[0] != 0 && server->client().localIP().toString() != "192.168.4.1" && !server->authenticate(globalConfig.http.user, globalConfig.http.pass))
         {
-            Debug::AddInfo(PSTR("Unauthenticated Update"));
+            Log::Info(PSTR("Unauthenticated Update"));
             return;
         }
-        Debug::AddInfo(PSTR("Update: %s"), upload.filename.c_str());
+        Log::Info(PSTR("Update: %s"), upload.filename.c_str());
 #ifdef ESP8266
         WiFiUDP::stopAll();
         uint32_t maxSketchSpace = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
@@ -907,13 +907,13 @@ void Http::handleUpdateUpload()
     {
         if (Update.end(true))
         {
-            Debug::AddInfo(PSTR("Update Success: %u   Rebooting..."), upload.totalSize);
+            Log::Info(PSTR("Update Success: %u   Rebooting..."), upload.totalSize);
         }
     }
     else if (upload.status == UPLOAD_FILE_ABORTED)
     {
         Update.end();
-        Debug::AddInfo(PSTR("Update was aborted"));
+        Log::Info(PSTR("Update was aborted"));
     }
     delay(0);
 }
@@ -950,7 +950,7 @@ void Http::begin()
         module->httpAdd(server);
     }
     server->begin();
-    Debug::AddInfo(PSTR("HTTP server started port: %d"), globalConfig.http.port);
+    Log::Info(PSTR("HTTP server started port: %d"), globalConfig.http.port);
 }
 
 void Http::stop()
@@ -960,7 +960,7 @@ void Http::stop()
         return;
     }
     server->stop();
-    Debug::AddInfo(PSTR("HTTP server stoped"));
+    Log::Info(PSTR("HTTP server stoped"));
 }
 
 void Http::loop()
@@ -975,7 +975,7 @@ bool Http::captivePortal()
 {
     if (!WifiMgr::isIp(server->hostHeader()))
     {
-        //Debug::AddInfo(PSTR("Request redirected to captive portal"));
+        //Log::Info(PSTR("Request redirected to captive portal"));
         server->sendHeader(F("Location"), String(F("http://")) + server->client().localIP().toString(), true);
         server->send(302, F("text/plain"), ""); // Empty content inhibits Content-length header so we have to close the socket ourselves.
         server->client().stop();                // Stop is needed because we sent no content length
@@ -1020,7 +1020,7 @@ void Http::handleModuleSetting()
         }
         strcpy(globalConfig.debug.server, log_syslog_host.c_str());
         globalConfig.debug.port = log_syslog_port.toInt();
-        WiFi.hostByName(globalConfig.debug.server, Debug::ip);
+        WiFi.hostByName(globalConfig.debug.server, Log::ip);
     }
 #endif
 
@@ -1089,11 +1089,11 @@ void Http::OTA(String url)
     url.replace(F("%module%"), module ? module->getModuleName() : F(""));
 
     Config::saveConfig();
-    Debug::AddInfo(PSTR("OTA Url: %s"), url.c_str());
+    Log::Info(PSTR("OTA Url: %s"), url.c_str());
     Led::blinkLED(200, 5);
     WiFiClient OTAclient;
     if (ESPHTTPUpdate.update(OTAclient, url, (module ? module->getModuleVersion() : F(""))) == HTTP_UPDATE_FAILED)
     {
-        Debug::AddError(PSTR("HTTP_UPDATE_FAILD Error (%d): %s"), ESPHTTPUpdate.getLastError(), ESPHTTPUpdate.getLastErrorString().c_str());
+        Log::Error(PSTR("HTTP_UPDATE_FAILD Error (%d): %s"), ESPHTTPUpdate.getLastError(), ESPHTTPUpdate.getLastErrorString().c_str());
     }
 }

@@ -1,6 +1,6 @@
 #include "Common.h"
 #include "Rtc.h"
-#include "Debug.h"
+#include "Log.h"
 
 RtcReboot Rtc::rtcReboot;
 uint32_t Rtc::rtcRebootCrc = 0;
@@ -160,7 +160,7 @@ void Rtc::getNtp()
         {
             utcTime = ntp_time + (3600 * 8); // 修正时区
             breakTime(utcTime, rtcTime);
-            //Debug::AddInfo(PSTR("NTP: %04d-%02d-%02d %02d:%02d:%02d"), rtcTime.year, rtcTime.month, rtcTime.day_of_month, rtcTime.hour, rtcTime.minute, rtcTime.second);
+            //Log::Info(PSTR("NTP: %04d-%02d-%02d %02d:%02d:%02d"), rtcTime.year, rtcTime.month, rtcTime.day_of_month, rtcTime.hour, rtcTime.minute, rtcTime.second);
         }
     }
 }
@@ -175,7 +175,7 @@ void Rtc::perSecondDo()
     {
         utcTime += 1;
         breakTime(utcTime, rtcTime);
-        //Debug::AddInfo(PSTR("Ticker: %04d-%02d-%02d %02d:%02d:%02d"), rtcTime.year, rtcTime.month, rtcTime.day_of_month, rtcTime.hour, rtcTime.minute, rtcTime.second);
+        //Log::Info(PSTR("Ticker: %04d-%02d-%02d %02d:%02d:%02d"), rtcTime.year, rtcTime.month, rtcTime.day_of_month, rtcTime.hour, rtcTime.minute, rtcTime.second);
     }
 }
 
@@ -183,12 +183,12 @@ void Rtc::init()
 {
     if (globalConfig.wifi.ntp[0] != '\0')
     {
-        Debug::AddInfo(PSTR("NTP Server: %s"), globalConfig.wifi.ntp);
+        Log::Info(PSTR("NTP Server: %s"), globalConfig.wifi.ntp);
         configTime(0, 0, globalConfig.wifi.ntp);
     }
     else
     {
-        Debug::AddInfo(PSTR("NTP Server: default"));
+        Log::Info(PSTR("NTP Server: default"));
         configTime(0, 0, "120.25.115.20", "203.107.6.88", "ntp3.aliyun.com");
     }
     utcTime = 0;

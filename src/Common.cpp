@@ -1,5 +1,5 @@
 #include "Common.h"
-#include "Debug.h"
+#include "Log.h"
 
 #ifdef ESP32
 
@@ -13,7 +13,7 @@ bool spiflash_init()
     }
     if (!EEPROMconfig.begin(SPI_FLASH_SEC_SIZE))
     {
-        Debug::AddError(PSTR("Failed to initialise EEPROMconfig"));
+        Log::Error(PSTR("Failed to initialise EEPROMconfig"));
         delay(1000);
         ESP.restart();
         return false;

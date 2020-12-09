@@ -32,7 +32,7 @@ uint16_t Config::crc16(uint8_t *ptr, uint16_t len)
 
 void Config::resetConfig()
 {
-    Debug::AddInfo(PSTR("resetConfig . . . OK"));
+    Log::Info(PSTR("resetConfig . . . OK"));
     memset(&globalConfig, 0, sizeof(GlobalConfigMessage));
 
 #ifdef WIFI_SSID
@@ -107,7 +107,7 @@ void Config::readConfig()
         {
             len = GlobalConfigMessage_size;
         }
-        //Debug::AddInfo(PSTR("readConfig . . . Len: %d Crc: %d"), len, nowCrc);
+        //Log::Info(PSTR("readConfig . . . Len: %d Crc: %d"), len, nowCrc);
 
         uint8_t *data = (uint8_t *)malloc(len);
 #ifdef ESP8266
@@ -129,7 +129,7 @@ void Config::readConfig()
             }
             else
             {
-                Debug::AddError(PSTR("readConfig . . . Error Crc: %d Crc: %d"), crc, nowCrc);
+                Log::Error(PSTR("readConfig . . . Error Crc: %d Crc: %d"), crc, nowCrc);
             }
         }
         free(data);
@@ -138,7 +138,7 @@ void Config::readConfig()
     if (!status)
     {
         globalConfig.debug.type = 1;
-        Debug::AddError(PSTR("readConfig . . . Error"));
+        Log::Error(PSTR("readConfig . . . Error"));
         resetConfig();
     }
     else
@@ -147,7 +147,7 @@ void Config::readConfig()
         {
             module->readConfig();
         }
-        Debug::AddInfo(PSTR("readConfig       . . . OK Len: %d"), len);
+        Log::Info(PSTR("readConfig       . . . OK Len: %d"), len);
     }
 }
 
@@ -164,7 +164,7 @@ bool Config::saveConfig(bool isEverySecond)
     size_t len = stream.bytes_written;
     if (!status)
     {
-        Debug::AddError(PSTR("saveConfig . . . Error"));
+        Log::Error(PSTR("saveConfig . . . Error"));
         return false;
     }
     else
@@ -172,7 +172,7 @@ bool Config::saveConfig(bool isEverySecond)
         uint16_t crc = crc16(buffer, len);
         if (crc == nowCrc)
         {
-            // Debug::AddInfo(PSTR("Check Config CRC . . . Same"));
+            // Log::Info(PSTR("Check Config CRC . . . Same"));
             return true;
         }
         else
@@ -190,7 +190,7 @@ bool Config::saveConfig(bool isEverySecond)
 #endif
     {
         free(data);
-        Debug::AddError(PSTR("saveConfig . . . Read EEPROM Data Error"));
+        Log::Error(PSTR("saveConfig . . . Read EEPROM Data Error"));
         return false;
     }
 
@@ -214,7 +214,7 @@ bool Config::saveConfig(bool isEverySecond)
 #endif
     {
         free(data);
-        Debug::AddError(PSTR("saveConfig . . . Erase Sector Error"));
+        Log::Error(PSTR("saveConfig . . . Erase Sector Error"));
         return false;
     }
 
@@ -226,12 +226,12 @@ bool Config::saveConfig(bool isEverySecond)
 #endif
     {
         free(data);
-        Debug::AddError(PSTR("saveConfig . . . Write EEPROM Data Error"));
+        Log::Error(PSTR("saveConfig . . . Write EEPROM Data Error"));
         return false;
     }
     free(data);
 
-    Debug::AddInfo(PSTR("saveConfig . . . OK Len: %d Crc: %d"), len, nowCrc);
+    Log::Info(PSTR("saveConfig . . . OK Len: %d Crc: %d"), len, nowCrc);
     return true;
 }
 
@@ -260,7 +260,7 @@ void Config::moduleReadConfig(uint16_t version, uint16_t size, const pb_field_t 
         || globalConfig.cfg_version != version                                                                    // 版本不一致
         || globalConfig.module_crc != Config::crc16(globalConfig.module_cfg.bytes, globalConfig.module_cfg.size)) // crc错误
     {
-        Debug::AddError(PSTR("moduleReadConfig . . . Error %d %d %d"), globalConfig.cfg_version, version, globalConfig.module_cfg.size);
+        Log::Error(PSTR("moduleReadConfig . . . Error %d %d %d"), globalConfig.cfg_version, version, globalConfig.module_cfg.size);
         if (module)
         {
             module->resetConfig();
@@ -279,7 +279,7 @@ void Config::moduleReadConfig(uint16_t version, uint16_t size, const pb_field_t 
     }
     else
     {
-        Debug::AddInfo(PSTR("moduleReadConfig . . . OK Len: %d"), globalConfig.module_cfg.size);
+        Log::Info(PSTR("moduleReadConfig . . . OK Len: %d"), globalConfig.module_cfg.size);
     }
 }
 
@@ -298,7 +298,7 @@ bool Config::moduleSaveConfig(uint16_t version, uint16_t size, const pb_field_t 
             globalConfig.module_crc = crc;
             globalConfig.module_cfg.size = len;
             memcpy(globalConfig.module_cfg.bytes, buffer, len);
-            //Debug::AddInfo(PSTR("moduleSaveConfig . . . OK Len: %d"), len);
+            //Log::Info(PSTR("moduleSaveConfig . . . OK Len: %d"), len);
         }
     }
     return status;

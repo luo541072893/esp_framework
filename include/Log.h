@@ -1,7 +1,7 @@
-// Debug.h
+// Log.h
 
-#ifndef _DEBUG_h
-#define _DEBUG_h
+#ifndef _LOG_h
+#define _LOG_h
 
 #include "Config.h"
 
@@ -15,7 +15,7 @@ enum LoggingLevels
     LOG_LEVEL_ALL
 };
 
-class Debug
+class Log
 {
 protected:
     static size_t strchrspn(const char *str1, int character);
@@ -31,12 +31,12 @@ public:
     static IPAddress ip;
     static void Syslog();
 #endif
-    static void AddLog(uint8_t loglevel);
-    static void AddLog(uint8_t loglevel, PGM_P formatP, ...);
+    static void Record(uint8_t loglevel);
+    static void Record(uint8_t loglevel, PGM_P formatP, ...);
 
-    static void AddInfo(PGM_P formatP, ...);
-    static void AddDebug(PGM_P formatP, ...);
-    static void AddError(PGM_P formatP, ...);
+    static void Info(PGM_P formatP, ...);
+    static void Debug(PGM_P formatP, ...);
+    static void Error(PGM_P formatP, ...);
 };
 
 #endif

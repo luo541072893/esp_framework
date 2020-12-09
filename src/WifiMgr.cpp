@@ -3,7 +3,7 @@
 #include <Ticker.h>
 #include "Common.h"
 #include "WifiMgr.h"
-#include "Debug.h"
+#include "Log.h"
 #include "Http.h"
 
 #ifdef ESP8266
@@ -45,13 +45,13 @@ void WifiMgr::setupWifi()
     WiFi.setAutoConnect(true);
     WiFi.setAutoReconnect(true);
     WIFI_setHostname(UID);
-    Debug::AddInfo(PSTR("Connecting to %s %s Wifi"), globalConfig.wifi.ssid, globalConfig.wifi.pass);
+    Log::Info(PSTR("Connecting to %s %s Wifi"), globalConfig.wifi.ssid, globalConfig.wifi.pass);
 #ifdef ESP8266
     STAGotIP = WiFi.onStationModeGotIP([](const WiFiEventStationModeGotIP &event) {
 #ifdef WIFI_CONNECT_TIMEOUT
         connectStart = 0;
 #endif
-        Debug::AddInfo(PSTR("WiFi1 connected. SSID: %s IP address: %s"), WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
+        Log::Info(PSTR("WiFi1 connected. SSID: %s IP address: %s"), WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
         if (globalConfig.wifi.is_static && String(globalConfig.wifi.ip).equals(WiFi.localIP().toString()))
         {
             isDHCP = false;
@@ -62,7 +62,7 @@ void WifiMgr::setupWifi()
             {
                 connectStart = millis() + WIFI_CONNECT_TIMEOUT * 1000;
             }
-            Debug::AddInfo(PSTR("onStationModeDisconnected"));
+            Log::Info(PSTR("onStationModeDisconnected"));
             STADisconnected = NULL;
         });
         */
@@ -73,7 +73,7 @@ void WifiMgr::setupWifi()
 #ifdef WIFI_CONNECT_TIMEOUT
         connectStart = 0;
 #endif
-        Debug::AddInfo(PSTR("WiFi1 connected. SSID: %s IP address: %s"), WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
+        Log::Info(PSTR("WiFi1 connected. SSID: %s IP address: %s"), WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
         if (globalConfig.wifi.is_static && String(globalConfig.wifi.ip).equals(WiFi.localIP().toString()))
         {
             isDHCP = false;
@@ -90,7 +90,7 @@ void WifiMgr::setupWifi()
         static_ip.fromString(globalConfig.wifi.ip);
         static_sn.fromString(globalConfig.wifi.sn);
         static_gw.fromString(globalConfig.wifi.gw);
-        Debug::AddInfo(PSTR("Custom STA IP/GW/Subnet: %s %s %s"), globalConfig.wifi.ip, globalConfig.wifi.sn, globalConfig.wifi.gw);
+        Log::Info(PSTR("Custom STA IP/GW/Subnet: %s %s %s"), globalConfig.wifi.ip, globalConfig.wifi.sn, globalConfig.wifi.gw);
         WiFi.config(static_ip, static_gw, static_sn);
     }
 
@@ -104,7 +104,7 @@ void WifiMgr::setupWifiManager(bool resetSettings)
 {
     if (resetSettings)
     {
-        Debug::AddInfo(PSTR("WifiManager ResetSettings"));
+        Log::Info(PSTR("WifiManager ResetSettings"));
         Config::resetConfig();
         WiFi.disconnect(true);
     }
@@ -114,11 +114,11 @@ void WifiMgr::setupWifiManager(bool resetSettings)
 
 #ifdef ESP8266
     STAGotIP = WiFi.onStationModeGotIP([](const WiFiEventStationModeGotIP &event) {
-        Debug::AddInfo(PSTR("WiFi2 connected. SSID: %s IP address: %s"), WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
+        Log::Info(PSTR("WiFi2 connected. SSID: %s IP address: %s"), WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
     });
 #else
     WiFi.onEvent([](WiFiEvent_t event, WiFiEventInfo_t info) {
-        Debug::AddInfo(PSTR("WiFi2 connected. SSID: %s IP address: %s"), WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
+        Log::Info(PSTR("WiFi2 connected. SSID: %s IP address: %s"), WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
     },
                  WiFiEvent_t::SYSTEM_EVENT_STA_GOT_IP);
 #endif
@@ -127,7 +127,7 @@ void WifiMgr::setupWifiManager(bool resetSettings)
     if (WiFi.isConnected())
     {
         WiFi.mode(WIFI_AP_STA);
-        Debug::AddInfo(PSTR("SET AP STA Mode"));
+        Log::Info(PSTR("SET AP STA Mode"));
     }
     else
     {
@@ -135,13 +135,13 @@ void WifiMgr::setupWifiManager(bool resetSettings)
         WiFi.disconnect();
         WiFi.mode(WIFI_AP_STA);
         WiFi.persistent(true);
-        Debug::AddInfo(PSTR("SET AP Mode"));
+        Log::Info(PSTR("SET AP Mode"));
     }
 
     connect = false;
     WiFi.softAP(UID);
     delay(500);
-    Debug::AddInfo(PSTR("AP IP address: %s"), WiFi.softAPIP().toString().c_str());
+    Log::Info(PSTR("AP IP address: %s"), WiFi.softAPIP().toString().c_str());
 
     dnsServer = new DNSServer();
     dnsServer->setErrorReplyCode(DNSReplyCode::NoError);
@@ -195,10 +195,10 @@ void WifiMgr::loop()
     if (connect)
     {
         connect = false;
-        Debug::AddInfo(PSTR("Connecting to new AP"));
+        Log::Info(PSTR("Connecting to new AP"));
 
         WiFi.begin(_ssid.c_str(), _pass.c_str());
-        Debug::AddInfo(PSTR("Waiting for connection result with time out"));
+        Log::Info(PSTR("Waiting for connection result with time out"));
     }
 
     if (_ssid.length() > 0 && WiFi.isConnected())
@@ -212,14 +212,14 @@ void WifiMgr::loop()
         ticker->attach(3, []() {
 #ifdef ESP8266
             WiFi.mode(WIFI_STA);
-            Debug::AddInfo(PSTR("SET STA Mode"));
+            Log::Info(PSTR("SET STA Mode"));
             ESP_Restart();
 #else
                 configPortalStart = 1;
 #endif
         });
 
-        Debug::AddInfo(PSTR("WiFi connected. SSID: %s IP address: %s"), WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
+        Log::Info(PSTR("WiFi connected. SSID: %s IP address: %s"), WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
 
         dnsServer->stop();
         configPortalStart = 0;
@@ -235,7 +235,7 @@ void WifiMgr::loop()
         configPortalStart = 0;
         _ssid = "";
         _pass = "";
-        Debug::AddInfo(PSTR("startConfigPortal TimeOut"));
+        Log::Info(PSTR("startConfigPortal TimeOut"));
         if (WiFi.isConnected())
         {
             //	为了使WEB获取到IP 2秒后才关闭AP
@@ -243,7 +243,7 @@ void WifiMgr::loop()
             ticker->attach(3, []() {
 #ifdef ESP8266
                 WiFi.mode(WIFI_STA);
-                Debug::AddInfo(PSTR("SET STA Mode"));
+                Log::Info(PSTR("SET STA Mode"));
                 ESP_Restart();
 #else
                     configPortalStart = 1;
@@ -252,7 +252,7 @@ void WifiMgr::loop()
         }
         else
         {
-            Debug::AddInfo(PSTR("Wifi failed to connect and hit timeout. Rebooting..."));
+            Log::Info(PSTR("Wifi failed to connect and hit timeout. Rebooting..."));
             delay(3000);
             ESP_Restart(); // 重置，可能进入深度睡眠状态
             delay(5000);

@@ -2,20 +2,20 @@
 #include <WiFiUdp.h>
 #endif
 #include "Config.h"
-#include "Debug.h"
+#include "Log.h"
 #include "Rtc.h"
 
 #ifdef WEB_LOG_SIZE
-uint8_t Debug::webLogIndex = 1;
-char Debug::webLog[WEB_LOG_SIZE] = {'\0'};
+uint8_t Log::webLogIndex = 1;
+char Log::webLog[WEB_LOG_SIZE] = {'\0'};
 #endif
 
 #ifdef USE_SYSLOG
-IPAddress Debug::ip;
+IPAddress Log::ip;
 WiFiUDP PortUdp;
 #endif
 
-size_t Debug::strchrspn(const char *str1, int character)
+size_t Log::strchrspn(const char *str1, int character)
 {
     size_t ret = 0;
     char *start = (char *)str1;
@@ -26,7 +26,7 @@ size_t Debug::strchrspn(const char *str1, int character)
 }
 
 #ifdef WEB_LOG_SIZE
-void Debug::GetLog(uint8_t idx, char **entry_pp, uint16_t *len_p)
+void Log::GetLog(uint8_t idx, char **entry_pp, uint16_t *len_p)
 {
     char *entry_p = NULL;
     size_t len = 0;
@@ -55,7 +55,7 @@ void Debug::GetLog(uint8_t idx, char **entry_pp, uint16_t *len_p)
 #endif
 
 #ifdef USE_SYSLOG
-void Debug::Syslog()
+void Log::Syslog()
 {
     if ((2 & globalConfig.debug.type) != 2 || WiFi.status() != WL_CONNECTED || globalConfig.debug.server[0] == '\0' || globalConfig.debug.port == 0)
     {
@@ -81,7 +81,7 @@ void Debug::Syslog()
 }
 #endif
 
-void Debug::AddLog(uint8_t loglevel)
+void Log::Record(uint8_t loglevel)
 {
     char mxtime[10]; // "13:45:21 "
     snprintf_P(mxtime, sizeof(mxtime), PSTR("%02d:%02d:%02d "), Rtc::rtcTime.hour, Rtc::rtcTime.minute, Rtc::rtcTime.second);
@@ -124,42 +124,42 @@ void Debug::AddLog(uint8_t loglevel)
 #endif
 }
 
-void Debug::AddLog(uint8_t loglevel, PGM_P formatP, ...)
+void Log::Record(uint8_t loglevel, PGM_P formatP, ...)
 {
     va_list arg;
     va_start(arg, formatP);
     vsnprintf_P(tmpData, sizeof(tmpData), formatP, arg);
     va_end(arg);
 
-    AddLog(loglevel);
+    Record(loglevel);
 }
 
-void Debug::AddInfo(PGM_P formatP, ...)
+void Log::Info(PGM_P formatP, ...)
 {
     va_list arg;
     va_start(arg, formatP);
     vsnprintf_P(tmpData, sizeof(tmpData), formatP, arg);
     va_end(arg);
 
-    AddLog(LOG_LEVEL_INFO);
+    Record(LOG_LEVEL_INFO);
 }
 
-void Debug::AddDebug(PGM_P formatP, ...)
+void Log::Debug(PGM_P formatP, ...)
 {
     va_list arg;
     va_start(arg, formatP);
     vsnprintf_P(tmpData, sizeof(tmpData), formatP, arg);
     va_end(arg);
 
-    AddLog(LOG_LEVEL_DEBUG);
+    Record(LOG_LEVEL_DEBUG);
 }
 
-void Debug::AddError(PGM_P formatP, ...)
+void Log::Error(PGM_P formatP, ...)
 {
     va_list arg;
     va_start(arg, formatP);
     vsnprintf_P(tmpData, sizeof(tmpData), formatP, arg);
     va_end(arg);
 
-    AddLog(LOG_LEVEL_ERROR);
+    Record(LOG_LEVEL_ERROR);
 }

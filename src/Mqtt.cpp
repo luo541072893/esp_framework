@@ -14,12 +14,12 @@ bool Mqtt::mqttConnect()
 {
     if (WiFi.status() != WL_CONNECTED)
     {
-        Debug::AddInfo(PSTR("wifi disconnected"));
+        Log::Info(PSTR("wifi disconnected"));
         return false;
     }
     if (globalConfig.mqtt.port == 0)
     {
-        Debug::AddInfo(PSTR("no set mqtt info"));
+        Log::Info(PSTR("no set mqtt info"));
         return false;
     }
     if (mqttClient.connected())
@@ -27,11 +27,11 @@ bool Mqtt::mqttConnect()
         return true;
     }
 
-    Debug::AddInfo(PSTR("client mqtt not connected, trying to connect to %s:%d Broker"), globalConfig.mqtt.server, globalConfig.mqtt.port);
+    Log::Info(PSTR("client mqtt not connected, trying to connect to %s:%d Broker"), globalConfig.mqtt.server, globalConfig.mqtt.port);
     mqttClient.setServer(globalConfig.mqtt.server, globalConfig.mqtt.port);
     if (mqttClient.connect(UID, globalConfig.mqtt.user, globalConfig.mqtt.pass, getTeleTopic(F("availability")).c_str(), 0, true, "offline"))
     {
-        Debug::AddInfo(PSTR("successful client mqtt connection"));
+        Log::Info(PSTR("successful client mqtt connection"));
         availability();
         if (globalConfig.mqtt.interval > 0)
         {
@@ -44,7 +44,7 @@ bool Mqtt::mqttConnect()
     }
     else
     {
-        Debug::AddInfo(PSTR("Connecting to %s:%d Broker . . failed, rc=%d"), globalConfig.mqtt.server, globalConfig.mqtt.port, mqttClient.state());
+        Log::Info(PSTR("Connecting to %s:%d Broker . . failed, rc=%d"), globalConfig.mqtt.server, globalConfig.mqtt.port, mqttClient.state());
     }
     return mqttClient.connected();
 }
@@ -54,7 +54,7 @@ void Mqtt::doReportInfo()
     char message[250];
     sprintf(message, PSTR("{\"uid\":\"%s\",\"ssid\":\"%s\",\"rssi\":\"%s\",\"version\":\"%s\",\"ip\":\"%s\",\"mac\":\"%s\",\"freemem\":%d,\"uptime\":%d,\"buildtime\":\"%s\"}"),
             UID, WiFi.SSID().c_str(), String(WiFi.RSSI()).c_str(), (module ? module->getModuleVersion().c_str() : PSTR("0")), WiFi.localIP().toString().c_str(), WiFi.macAddress().c_str(), ESP.getFreeHeap(), millis() / 1000, Rtc::GetBuildDateAndTime().c_str());
-    //Debug::AddInfo(PSTR("%s"), message);
+    //Log::Info(PSTR("%s"), message);
     publish(getTeleTopic(F("info")), message);
 }
 

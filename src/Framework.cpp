@@ -8,7 +8,7 @@ uint16_t Framework::rebootCount = 0;
 #ifndef DISABLE_MQTT
 void Framework::callback(char *topic, byte *payload, unsigned int length)
 {
-    Debug::AddInfo(PSTR("Subscribe: %s payload: %.*s"), topic, length, payload);
+    Log::Info(PSTR("Subscribe: %s payload: %.*s"), topic, length, payload);
 
     char *cmnd = strrchr(topic, '/');
     if (cmnd == nullptr)
@@ -80,7 +80,7 @@ void Framework::one(unsigned long baud)
 
 void Framework::setup()
 {
-    Debug::AddError(PSTR("---------------------  v%s  %s  -------------------"), module->getModuleVersion().c_str(), Rtc::GetBuildDateAndTime().c_str());
+    Log::Error(PSTR("---------------------  v%s  %s  -------------------"), module->getModuleVersion().c_str(), Rtc::GetBuildDateAndTime().c_str());
     if (rebootCount == 1)
     {
         Config::readConfig();
@@ -107,13 +107,13 @@ void Framework::setup()
     }
     Util::strlowr(UID);
 
-    Debug::AddInfo(PSTR("UID: %s"), UID);
-    // Debug::AddInfo(PSTR("Config Len: %d"), GlobalConfigMessage_size + 6);
+    Log::Info(PSTR("UID: %s"), UID);
+    // Log::Info(PSTR("Config Len: %d"), GlobalConfigMessage_size + 6);
 
     //Config::resetConfig();
     if (MQTT_MAX_PACKET_SIZE == 128)
     {
-        Debug::AddError(PSTR("WRONG PUBSUBCLIENT LIBRARY USED PLEASE INSTALL THE ONE FROM OMG LIB FOLDER"));
+        Log::Error(PSTR("WRONG PUBSUBCLIENT LIBRARY USED PLEASE INSTALL THE ONE FROM OMG LIB FOLDER"));
     }
 
     WifiMgr::connectWifi();
