@@ -156,7 +156,7 @@ void Rtc::getNtp()
     if (WiFi.status() == WL_CONNECTED)
     {
         uint32_t ntp_time = sntp_get_current_timestamp();
-        if (ntp_time > 1451602800)
+        if (ntp_time > START_VALID_TIME)
         {
             utcTime = ntp_time + (3600 * 8); // 修正时区
             breakTime(utcTime, rtcTime);
