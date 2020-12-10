@@ -54,17 +54,12 @@ void Framework::tickerPerSecondDo()
         Rtc::rtcReboot.fast_reboot_count = 0;
         Rtc::rtcRebootSave();
     }
-    if (rebootCount == 3)
+    if (rebootCount >= 3)
     {
         return;
     }
-    Rtc::perSecondDo();
-
-    Config::perSecondDo();
-#ifndef DISABLE_MQTT
-    Mqtt::perSecondDo();
-#endif
-    module->perSecondDo();
+    Rtc::addSecond();
+    bitSet(Config::operationFlag, 0);
 }
 
 void Framework::one(unsigned long baud)
@@ -80,7 +75,7 @@ void Framework::one(unsigned long baud)
 
 void Framework::setup()
 {
-    Log::Error(PSTR("---------------------  v%s  %s  -------------------"), module->getModuleVersion().c_str(), Rtc::GetBuildDateAndTime().c_str());
+    Log::Error(PSTR("---------------------  v%s  %s  %d-------------------"), module->getModuleVersion().c_str(), Rtc::GetBuildDateAndTime().c_str(), rebootCount);
     if (rebootCount == 1)
     {
         Config::readConfig();
@@ -90,6 +85,10 @@ void Framework::setup()
     {
         Config::readConfig();
         module->resetConfig();
+    }
+    else if (rebootCount == 3)
+    {
+        Config::resetConfig();
     }
     else
     {
@@ -117,7 +116,7 @@ void Framework::setup()
     }
 
     WifiMgr::connectWifi();
-    if (rebootCount == 3)
+    if (rebootCount >= 3)
     {
         module = NULL;
     }
@@ -139,26 +138,47 @@ void Framework::setup()
 
 void Framework::loop()
 {
-    if (rebootCount == 3)
+    if (rebootCount >= 3)
     {
         WifiMgr::loop();
         Http::loop();
+        return;
     }
-    else
-    {
-        yield();
-        Led::loop();
+
+    yield();
+    Led::loop();
 #ifndef DISABLE_MQTT
-        yield();
-        Mqtt::loop();
+    yield();
+    Mqtt::loop();
 #endif
+    if (module)
+    {
         yield();
         module->loop();
+    }
+    yield();
+    WifiMgr::loop();
+    yield();
+    Http::loop();
+
+    if (bitRead(Config::operationFlag, 0))
+    {
+        bitClear(Config::operationFlag, 0);
+
         yield();
-        WifiMgr::loop();
+        Rtc::perSecondDo();
         yield();
-        Http::loop();
+        Config::perSecondDo();
         yield();
-        Rtc::loop();
+        WifiMgr::perSecondDo();
+#ifndef DISABLE_MQTT
+        yield();
+        Mqtt::perSecondDo();
+#endif
+        if (module)
+        {
+            yield();
+            module->perSecondDo();
+        }
     }
 }

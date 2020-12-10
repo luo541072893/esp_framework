@@ -28,10 +28,13 @@ private:
 
 public:
     static unsigned long configPortalStart;
+    static unsigned long disconnectTime;
     static bool isDHCP;
 #ifdef ESP8266
     static WiFiEventHandler STAGotIP;
 //static WiFiEventHandler STADisconnected;
+#else
+    static void wiFiEvent(WiFiEvent_t event);
 #endif
     static WiFiClient wifiClient;
     static void connectWifi();
@@ -42,6 +45,7 @@ public:
     static uint8_t waitForConnectResult();
     static void tryConnect(String ssid, String pass);
 
+    static void perSecondDo();
     static void loop();
 };
 

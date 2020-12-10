@@ -11,6 +11,7 @@ GlobalConfigMessage globalConfig;
 uint16_t Config::nowCrc;
 uint8_t Config::countdown = 60;
 bool Config::isDelay = false;
+uint8_t Config::operationFlag = 0; // 0每秒
 
 const uint16_t crcTalbe[] = {
     0x0000, 0xCC01, 0xD801, 0x1400, 0xF001, 0x3C00, 0x2800, 0xE401,

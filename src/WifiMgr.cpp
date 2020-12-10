@@ -14,6 +14,7 @@ WiFiClient WifiMgr::wifiClient;
 bool WifiMgr::isDHCP = true;
 
 unsigned long WifiMgr::configPortalStart = 0;
+unsigned long WifiMgr::disconnectTime = 0;
 #ifdef WIFI_CONNECT_TIMEOUT
 unsigned long WifiMgr::connectStart = 0;
 #endif
@@ -22,9 +23,32 @@ String WifiMgr::_ssid = "";
 String WifiMgr::_pass = "";
 DNSServer *WifiMgr::dnsServer;
 
+#ifdef ESP32
+void WifiMgr::wiFiEvent(WiFiEvent_t event)
+{
+    //Log::Info(PSTR("[WiFi-event] event: %d"), event);
+    switch (event)
+    {
+    case SYSTEM_EVENT_STA_GOT_IP:
+#ifdef WIFI_CONNECT_TIMEOUT
+        connectStart = 0;
+#endif
+        Log::Info(PSTR("WiFi connected. SSID: %s IP address: %s"), WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
+        if (WiFi.getMode() == WIFI_MODE_STA && globalConfig.wifi.is_static && String(globalConfig.wifi.ip).equals(WiFi.localIP().toString()))
+        {
+            isDHCP = false;
+        }
+        break;
+    }
+}
+#endif
+
 void WifiMgr::connectWifi()
 {
     delay(50);
+#ifdef ESP32
+    WiFi.onEvent(WifiMgr::wiFiEvent);
+#endif
     if (globalConfig.wifi.ssid[0] != '\0')
     {
         setupWifi();
@@ -69,17 +93,6 @@ void WifiMgr::setupWifi()
     });
 #else
     WiFi.setSleep(false);
-    WiFi.onEvent([](WiFiEvent_t event, WiFiEventInfo_t info) {
-#ifdef WIFI_CONNECT_TIMEOUT
-        connectStart = 0;
-#endif
-        Log::Info(PSTR("WiFi1 connected. SSID: %s IP address: %s"), WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
-        if (globalConfig.wifi.is_static && String(globalConfig.wifi.ip).equals(WiFi.localIP().toString()))
-        {
-            isDHCP = false;
-        }
-    },
-                 WiFiEvent_t::SYSTEM_EVENT_STA_GOT_IP);
 #endif
     if (globalConfig.wifi.is_static)
     {
@@ -116,11 +129,6 @@ void WifiMgr::setupWifiManager(bool resetSettings)
     STAGotIP = WiFi.onStationModeGotIP([](const WiFiEventStationModeGotIP &event) {
         Log::Info(PSTR("WiFi2 connected. SSID: %s IP address: %s"), WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
     });
-#else
-    WiFi.onEvent([](WiFiEvent_t event, WiFiEventInfo_t info) {
-        Log::Info(PSTR("WiFi2 connected. SSID: %s IP address: %s"), WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
-    },
-                 WiFiEvent_t::SYSTEM_EVENT_STA_GOT_IP);
 #endif
 
     configPortalStart = millis();
@@ -155,6 +163,31 @@ void WifiMgr::tryConnect(String ssid, String pass)
     connect = true;
 }
 
+void WifiMgr::perSecondDo()
+{
+    if (perSecond % 60 == 0)
+    {
+        if (WiFi.isConnected()) // 如果连接了。重置未连接时间
+        {
+            disconnectTime = 0;
+        }
+        else if (configPortalStart == 0 && globalConfig.wifi.ssid[0] != '\0')
+        {
+            if (disconnectTime == 0)
+            {
+                Log::Info(PSTR("Wifi disconnect"));
+            }
+            disconnectTime++;
+            if (disconnectTime >= 10) // 10分钟未连上wifi则重启
+            {
+                Log::Info(PSTR("Wifi reconnect TimeOut"));
+                ESP_Restart();
+            }
+            WiFi.begin(globalConfig.wifi.ssid, globalConfig.wifi.pass);
+        }
+    }
+}
+
 void WifiMgr::loop()
 {
 #ifdef WIFI_CONNECT_TIMEOUT
@@ -170,19 +203,6 @@ void WifiMgr::loop()
 #endif
     if (configPortalStart == 0)
     {
-        // ESP32偶尔不能连接wifi
-        if (perSecond % 60 == 0)
-        {
-            if (!connect && globalConfig.wifi.ssid[0] != '\0' && !WiFi.isConnected())
-            {
-                connect = true;
-                WiFi.begin(globalConfig.wifi.ssid, globalConfig.wifi.pass);
-            }
-        }
-        else
-        {
-            connect = false;
-        }
         return;
     }
     else if (configPortalStart == 1)

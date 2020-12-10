@@ -40,6 +40,7 @@ private:
     static uint8_t countdown;
 
 public:
+    static uint8_t operationFlag; // 0每秒
     static uint16_t crc16(uint8_t *ptr, uint16_t len);
 
     static void readConfig();

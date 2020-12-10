@@ -6,8 +6,8 @@
 
 uint8_t Mqtt::operationFlag = 0;
 PubSubClient Mqtt::mqttClient;
-uint32_t Mqtt::lastReconnectAttempt = 0;   // 最后尝试重连时间
-uint32_t Mqtt::kMqttReconnectTime = 60000; // 重新连接尝试之间的延迟（ms）
+uint32_t Mqtt::lastReconnectAttempt = 0; // 最后尝试重连时间
+uint32_t Mqtt::kMqttReconnectTime = 60;  // 重新连接尝试之间的延迟（秒）
 std::function<void()> Mqtt::connectedcallback = NULL;
 
 bool Mqtt::mqttConnect()
@@ -27,11 +27,11 @@ bool Mqtt::mqttConnect()
         return true;
     }
 
-    Log::Info(PSTR("client mqtt not connected, trying to connect to %s:%d Broker"), globalConfig.mqtt.server, globalConfig.mqtt.port);
+    Log::Info(PSTR("mqtt connect to %s:%d Broker"), globalConfig.mqtt.server, globalConfig.mqtt.port);
     mqttClient.setServer(globalConfig.mqtt.server, globalConfig.mqtt.port);
     if (mqttClient.connect(UID, globalConfig.mqtt.user, globalConfig.mqtt.pass, getTeleTopic(F("availability")).c_str(), 0, true, "offline"))
     {
-        Log::Info(PSTR("successful client mqtt connection"));
+        Log::Info(PSTR("mqtt connection successful"));
         availability();
         if (globalConfig.mqtt.interval > 0)
         {
@@ -44,7 +44,7 @@ bool Mqtt::mqttConnect()
     }
     else
     {
-        Log::Info(PSTR("Connecting to %s:%d Broker . . failed, rc=%d"), globalConfig.mqtt.server, globalConfig.mqtt.port, mqttClient.state());
+        Log::Info(PSTR("mqtt connection failed, rc=%d"), mqttClient.state());
     }
     return mqttClient.connected();
 }
@@ -65,21 +65,16 @@ void Mqtt::availability()
 
 void Mqtt::perSecondDo()
 {
-    bitSet(operationFlag, 0);
-}
-
-void Mqtt::loop()
-{
     if (WiFi.status() != WL_CONNECTED || globalConfig.mqtt.port == 0)
     {
         return;
     }
-    uint32_t now = millis();
+
     if (!mqttClient.connected())
     {
-        if (now - lastReconnectAttempt > kMqttReconnectTime || lastReconnectAttempt == 0)
+        if (lastReconnectAttempt == 0 || millis() - lastReconnectAttempt > kMqttReconnectTime * 1000)
         {
-            lastReconnectAttempt = now;
+            lastReconnectAttempt = millis();
             if (mqttConnect())
             {
                 lastReconnectAttempt = 0;
@@ -88,20 +83,24 @@ void Mqtt::loop()
     }
     else
     {
-        mqttClient.loop();
-        if (bitRead(operationFlag, 0))
+        if (globalConfig.mqtt.interval > 0 && (perSecond % globalConfig.mqtt.interval) == 0)
         {
-            bitClear(operationFlag, 0);
-            if (globalConfig.mqtt.interval > 0 && (perSecond % globalConfig.mqtt.interval) == 0)
-            {
-                doReportInfo();
-            }
-            if (perSecond % 3609 == 0)
-            {
-                availability();
-            }
+            doReportInfo();
+        }
+        if (perSecond % 3609 == 0)
+        {
+            availability();
         }
     }
+}
+
+void Mqtt::loop()
+{
+    if (WiFi.status() != WL_CONNECTED || globalConfig.mqtt.port == 0)
+    {
+        return;
+    }
+    mqttClient.loop();
 }
 
 String Mqtt::getCmndTopic(String topic)

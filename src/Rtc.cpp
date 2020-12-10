@@ -142,12 +142,13 @@ void Rtc::breakTime(uint32_t time_input, TIME_T &tm)
     tm.valid = (time_input > 1451602800); // 2016-01-01
 }
 
-void Rtc::loop()
+void Rtc::addSecond()
 {
-    if (bitRead(operationFlag, 0))
+    if (utcTime > 0)
     {
-        bitClear(operationFlag, 0);
-        getNtp();
+        utcTime += 1;
+        breakTime(utcTime, rtcTime);
+        //Log::Info(PSTR("Ticker: %04d-%02d-%02d %02d:%02d:%02d"), rtcTime.year, rtcTime.month, rtcTime.day_of_month, rtcTime.hour, rtcTime.minute, rtcTime.second);
     }
 }
 
@@ -169,13 +170,7 @@ void Rtc::perSecondDo()
 {
     if (utcTime == 0 || perSecond % 600 == 0)
     {
-        bitSet(operationFlag, 0);
-    }
-    if (utcTime > 0)
-    {
-        utcTime += 1;
-        breakTime(utcTime, rtcTime);
-        //Log::Info(PSTR("Ticker: %04d-%02d-%02d %02d:%02d:%02d"), rtcTime.year, rtcTime.month, rtcTime.day_of_month, rtcTime.hour, rtcTime.minute, rtcTime.second);
+        getNtp();
     }
 }
 

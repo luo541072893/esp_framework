@@ -24,7 +24,7 @@ public:
     static MQTT_CONNECTED_CALLBACK_SIGNATURE;
 
     static uint32_t lastReconnectAttempt; // 最后尝试重连时间
-    static uint32_t kMqttReconnectTime;   // 重新连接尝试之间的延迟（ms）
+    static uint32_t kMqttReconnectTime;   // 重新连接尝试之间的延迟（秒）
 
     static bool mqttConnect();
     static void availability();

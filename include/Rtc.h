@@ -50,7 +50,7 @@ public:
     static String GetBuildDateAndTime();
     static void perSecondDo();
     static void init();
-    static void loop();
+    static void addSecond();
 
     static uint32_t getRtcRebootCrc();
     static void rtcRebootLoad();
