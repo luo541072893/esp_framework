@@ -28,7 +28,6 @@ public:
 
     static bool mqttConnect();
     static void availability();
-    static void loop();
     static void mqttSetLoopCallback(MQTT_CALLBACK_SIGNATURE);
     static void mqttSetConnectedCallback(MQTT_CONNECTED_CALLBACK_SIGNATURE);
 
@@ -46,7 +45,10 @@ public:
     static bool subscribe(String topic, uint8_t qos = 0) { return subscribe(topic.c_str(), qos); };
     static bool unsubscribe(const char *topic);
     static bool unsubscribe(String topic) { return unsubscribe(topic.c_str()); };
+
     static void perSecondDo();
+    static void loop();
+    static bool callModule(uint8_t function);
 };
 
 #endif

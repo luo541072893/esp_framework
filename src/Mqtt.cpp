@@ -103,6 +103,20 @@ void Mqtt::loop()
     mqttClient.loop();
 }
 
+bool Mqtt::callModule(uint8_t function)
+{
+    switch (function)
+    {
+    case FUNC_EVERY_SECOND:
+        perSecondDo();
+        break;
+    case FUNC_LOOP:
+        loop();
+        break;
+    }
+    return false;
+}
+
 String Mqtt::getCmndTopic(String topic)
 {
     return getTopic(0, topic);

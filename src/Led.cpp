@@ -63,6 +63,17 @@ void Led::loop()
     }
 }
 
+bool Led::callModule(uint8_t function)
+{
+    switch (function)
+    {
+    case FUNC_LOOP:
+        loop();
+        break;
+    }
+    return false;
+}
+
 void Led::on()
 {
     if (io != 99 && !isOn)

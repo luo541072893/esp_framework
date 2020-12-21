@@ -6,7 +6,7 @@
 #include "Arduino.h"
 
 #define LEAP_YEAR(Y) (((1970 + Y) > 0) && !((1970 + Y) % 4) && (((1970 + Y) % 100) || !((1970 + Y) % 400)))
-const uint32_t START_VALID_TIME = 1451602800;  // Time is synced and after 2016-01-01
+const uint32_t START_VALID_TIME = 1451602800; // Time is synced and after 2016-01-01
 
 typedef struct
 {
@@ -48,7 +48,7 @@ public:
     static String timeSince(uint32_t const start);
 
     static String GetBuildDateAndTime();
-    static void perSecondDo();
+    static bool callModule(uint8_t function);
     static void init();
     static void addSecond();
 

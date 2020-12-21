@@ -47,6 +47,7 @@ public:
 
     static void perSecondDo();
     static void loop();
+    static bool callModule(uint8_t function);
 };
 
 #endif

@@ -166,12 +166,18 @@ void Rtc::getNtp()
     }
 }
 
-void Rtc::perSecondDo()
+bool Rtc::callModule(uint8_t function)
 {
-    if (utcTime == 0 || perSecond % 600 == 0)
+    switch (function)
     {
-        getNtp();
+    case FUNC_EVERY_SECOND:
+        if (utcTime == 0 || perSecond % 600 == 0)
+        {
+            getNtp();
+        }
+        break;
     }
+    return false;
 }
 
 void Rtc::init()

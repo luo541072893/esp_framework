@@ -918,7 +918,7 @@ void Http::handleUpdateUpload()
     delay(0);
 }
 
-void Http::begin()
+void Http::init()
 {
     if (isBegin)
     {
@@ -969,6 +969,17 @@ void Http::loop()
     {
         server->handleClient();
     }
+}
+
+bool Http::callModule(uint8_t function)
+{
+    switch (function)
+    {
+    case FUNC_LOOP:
+        loop();
+        break;
+    }
+    return false;
 }
 
 bool Http::captivePortal()

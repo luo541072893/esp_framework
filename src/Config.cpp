@@ -7,6 +7,8 @@ char tmpData[512] = {0};
 uint32_t perSecond;
 Ticker *tickerPerSecond;
 GlobalConfigMessage globalConfig;
+bool (*module_func_ptr[10])(uint8_t) = {0};
+uint8_t module_func_present = 0;
 
 uint16_t Config::nowCrc;
 uint8_t Config::countdown = 60;
@@ -16,6 +18,26 @@ uint8_t Config::operationFlag = 0; // 0每秒
 const uint16_t crcTalbe[] = {
     0x0000, 0xCC01, 0xD801, 0x1400, 0xF001, 0x3C00, 0x2800, 0xE401,
     0xA001, 0x6C00, 0x7800, 0xB401, 0x5000, 0x9C01, 0x8801, 0x4400};
+
+void addModule(bool (*call)(uint8_t))
+{
+    module_func_ptr[module_func_present++] = call;
+}
+
+bool callModule(uint8_t function)
+{
+    bool result = false;
+    for (uint32_t x = 0; x < module_func_present; x++)
+    {
+        yield();
+        result = module_func_ptr[x](function);
+        if (result && ((FUNC_COMMAND == function)))
+        {
+            break;
+        }
+    }
+    return result;
+}
 
 /**
  * 计算Crc16
@@ -244,6 +266,17 @@ void Config::perSecondDo()
         saveConfig(Config::isDelay ? false : true);
         Config::isDelay = false;
     }
+}
+
+bool Config::callModule(uint8_t function)
+{
+    switch (function)
+    {
+    case FUNC_EVERY_SECOND:
+        perSecondDo();
+        break;
+    }
+    return false;
 }
 
 void Config::delaySaveConfig(uint8_t second)

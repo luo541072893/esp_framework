@@ -32,9 +32,10 @@ private:
 
 public:
     static WebServer *server;
-    static void begin();
+    static void init();
     static void stop();
     static void loop();
+    static bool callModule(uint8_t function);
     static bool captivePortal();
 
     static void OTA(String url);

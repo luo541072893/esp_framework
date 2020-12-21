@@ -71,6 +71,19 @@ void Framework::one(unsigned long baud)
 
     Serial.begin(baud);
     globalConfig.debug.type = 1;
+
+    addModule(WifiMgr::callModule);
+    addModule(Http::callModule);
+
+    if (rebootCount < 3)
+    {
+        addModule(Led::callModule);
+        addModule(Rtc::callModule);
+        addModule(Config::callModule);
+#ifndef DISABLE_MQTT
+        addModule(Mqtt::callModule);
+#endif
+    }
 }
 
 void Framework::setup()
@@ -130,7 +143,8 @@ void Framework::setup()
         module->init();
         Rtc::init();
     }
-    Http::begin();
+    Http::init();
+    callModule(FUNC_INIT);
 
     tickerPerSecond = new Ticker();
     tickerPerSecond->attach(1, tickerPerSecondDo);
@@ -145,36 +159,17 @@ void Framework::loop()
         return;
     }
 
-    yield();
-    Led::loop();
-#ifndef DISABLE_MQTT
-    yield();
-    Mqtt::loop();
-#endif
+    callModule(FUNC_LOOP);
     if (module)
     {
         yield();
         module->loop();
     }
-    yield();
-    WifiMgr::loop();
-    yield();
-    Http::loop();
 
     if (bitRead(Config::operationFlag, 0))
     {
         bitClear(Config::operationFlag, 0);
-
-        yield();
-        Rtc::perSecondDo();
-        yield();
-        Config::perSecondDo();
-        yield();
-        WifiMgr::perSecondDo();
-#ifndef DISABLE_MQTT
-        yield();
-        Mqtt::perSecondDo();
-#endif
+        callModule(FUNC_EVERY_SECOND);
         if (module)
         {
             yield();

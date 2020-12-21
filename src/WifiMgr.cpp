@@ -280,6 +280,20 @@ void WifiMgr::loop()
     }
 }
 
+bool WifiMgr::callModule(uint8_t function)
+{
+    switch (function)
+    {
+    case FUNC_EVERY_SECOND:
+        perSecondDo();
+        break;
+    case FUNC_LOOP:
+        loop();
+        break;
+    }
+    return false;
+}
+
 bool WifiMgr::isIp(String str)
 {
     int a, b, c, d;
