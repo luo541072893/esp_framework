@@ -90,3 +90,52 @@ bool Util::endWith(char *str, const char *suffix, uint16_t strLen)
     size_t suffixLen = strlen(suffix);
     return suffixLen <= strLen && strncmp(str + strLen - suffixLen, suffix, suffixLen) == 0 ? true : false;
 }
+
+inline int32_t Util::timeDifference(uint32_t prev, uint32_t next)
+{
+    return ((int32_t)(next - prev));
+}
+
+int32_t Util::timePassedSince(uint32_t timestamp)
+{
+    // Compute the number of milliSeconds passed since timestamp given.
+    // Note: value can be negative if the timestamp has not yet been reached.
+    return timeDifference(timestamp, millis());
+}
+
+bool Util::timeReached(uint32_t timer)
+{
+    // Check if a certain timeout has been reached.
+    const long passed = timePassedSince(timer);
+    return (passed >= 0);
+}
+
+void Util::setNextTimeInterval(uint32_t &timer, const uint32_t step)
+{
+    timer += step;
+    const long passed = timePassedSince(timer);
+    if (passed < 0)
+    {
+        return;
+    } // Event has not yet happened, which is fine.
+    if (static_cast<unsigned long>(passed) > step)
+    {
+        // No need to keep running behind, start again.
+        timer = millis() + step;
+        return;
+    }
+    // Try to get in sync again.
+    timer = millis() + (step - passed);
+}
+
+int32_t Util::timePassedSinceUsec(uint32_t timestamp)
+{
+    return timeDifference(timestamp, micros());
+}
+
+bool Util::timeReachedUsec(uint32_t timer)
+{
+    // Check if a certain timeout has been reached.
+    const long passed = timePassedSinceUsec(timer);
+    return (passed >= 0);
+}

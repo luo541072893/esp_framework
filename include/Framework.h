@@ -16,6 +16,7 @@ class Framework
 public:
     static void one(unsigned long baud);
     static void setup();
+    static void sleepDelay(uint32_t mseconds);
     static void loop();
 };
 

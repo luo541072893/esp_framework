@@ -150,8 +150,34 @@ void Framework::setup()
     tickerPerSecond->attach(1, tickerPerSecondDo);
 }
 
+void Framework::sleepDelay(uint32_t mseconds)
+{
+    if (mseconds)
+    {
+        for (uint32_t wait = 0; wait < mseconds; wait++)
+        {
+            delay(1);
+            if (Serial.available())
+            {
+                break;
+            }
+#ifdef ESP32
+            if (Serial1.available())
+            {
+                break;
+            }
+#endif
+        }
+    }
+    else
+    {
+        delay(0);
+    }
+}
+
 void Framework::loop()
 {
+    uint32_t my_sleep = millis();
     if (rebootCount >= 3)
     {
         WifiMgr::loop();
@@ -162,8 +188,14 @@ void Framework::loop()
     callModule(FUNC_LOOP);
     if (module)
     {
-        yield();
         module->loop();
+    }
+
+    static uint32_t state_50msecond = 0; // State 50msecond timer
+    if (Util::timeReached(state_50msecond))
+    {
+        Util::setNextTimeInterval(state_50msecond, 50);
+        callModule(FUNC_EVERY_50_MSECOND);
     }
 
     if (bitRead(Config::operationFlag, 0))
@@ -172,8 +204,21 @@ void Framework::loop()
         callModule(FUNC_EVERY_SECOND);
         if (module)
         {
-            yield();
             module->perSecondDo();
         }
+    }
+
+    uint32_t my_activity = millis() - my_sleep;
+    if (my_activity < 50)
+    {
+        sleepDelay(50 - my_activity);
+    }
+    else if (!bitRead(Config::statusFlag, 0))
+    {
+        sleepDelay(my_activity / 2);
+    }
+    else
+    {
+        delay(1);
     }
 }

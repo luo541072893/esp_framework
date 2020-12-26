@@ -12,7 +12,7 @@ std::function<void()> Mqtt::connectedcallback = NULL;
 
 bool Mqtt::mqttConnect()
 {
-    if (WiFi.status() != WL_CONNECTED)
+    if (!WiFi.isConnected())
     {
         Log::Info(PSTR("wifi disconnected"));
         return false;
@@ -65,13 +65,14 @@ void Mqtt::availability()
 
 void Mqtt::perSecondDo()
 {
-    if (WiFi.status() != WL_CONNECTED || globalConfig.mqtt.port == 0)
+    if (!WiFi.isConnected() || globalConfig.mqtt.port == 0)
     {
         return;
     }
 
     if (!mqttClient.connected())
     {
+        bitClear(Config::statusFlag, 1);
         if (lastReconnectAttempt == 0 || millis() - lastReconnectAttempt > kMqttReconnectTime * 1000)
         {
             lastReconnectAttempt = millis();
@@ -83,6 +84,7 @@ void Mqtt::perSecondDo()
     }
     else
     {
+        bitSet(Config::statusFlag, 1);
         if (globalConfig.mqtt.interval > 0 && (perSecond % globalConfig.mqtt.interval) == 0)
         {
             doReportInfo();
@@ -96,11 +98,18 @@ void Mqtt::perSecondDo()
 
 void Mqtt::loop()
 {
-    if (WiFi.status() != WL_CONNECTED || globalConfig.mqtt.port == 0)
+    if (!bitRead(Config::statusFlag, 0) || !bitRead(Config::statusFlag, 1))
     {
         return;
     }
-    mqttClient.loop();
+    if (mqttClient.loop())
+    {
+        bitSet(Config::statusFlag, 1);
+    }
+    else
+    {
+        bitClear(Config::statusFlag, 1);
+    }
 }
 
 bool Mqtt::callModule(uint8_t function)

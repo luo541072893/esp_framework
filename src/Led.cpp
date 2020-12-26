@@ -35,7 +35,7 @@ void Led::loop()
         }
         Led::ledType = 3;
     }
-    else if (WiFi.status() != WL_CONNECTED)
+    else if (!bitRead(Config::statusFlag, 0))
     {
         if (Led::ledType != 0)
         {
@@ -44,7 +44,7 @@ void Led::loop()
         }
     }
 #ifndef DISABLE_MQTT
-    else if (globalConfig.mqtt.port != 0 && !Mqtt::mqttClient.connected())
+    else if (globalConfig.mqtt.port != 0 && !bitRead(Config::statusFlag, 1))
     {
         if (Led::ledType != 1)
         {

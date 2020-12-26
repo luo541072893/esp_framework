@@ -33,6 +33,7 @@ void WifiMgr::wiFiEvent(WiFiEvent_t event)
 #ifdef WIFI_CONNECT_TIMEOUT
         connectStart = 0;
 #endif
+        bitSet(Config::statusFlag, 0);
         Log::Info(PSTR("WiFi connected. SSID: %s IP address: %s"), WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
         if (WiFi.getMode() == WIFI_MODE_STA && globalConfig.wifi.is_static && String(globalConfig.wifi.ip).equals(WiFi.localIP().toString()))
         {
@@ -75,6 +76,7 @@ void WifiMgr::setupWifi()
 #ifdef WIFI_CONNECT_TIMEOUT
         connectStart = 0;
 #endif
+        bitSet(Config::statusFlag, 0);
         Log::Info(PSTR("WiFi1 connected. SSID: %s IP address: %s"), WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
         if (globalConfig.wifi.is_static && String(globalConfig.wifi.ip).equals(WiFi.localIP().toString()))
         {
@@ -169,21 +171,26 @@ void WifiMgr::perSecondDo()
     {
         if (WiFi.isConnected()) // 如果连接了。重置未连接时间
         {
+            bitSet(Config::statusFlag, 0);
             disconnectTime = 0;
         }
-        else if (configPortalStart == 0 && globalConfig.wifi.ssid[0] != '\0')
+        else
         {
-            if (disconnectTime == 0)
+            bitClear(Config::statusFlag, 0);
+            if (configPortalStart == 0 && globalConfig.wifi.ssid[0] != '\0')
             {
-                Log::Info(PSTR("Wifi disconnect"));
+                if (disconnectTime == 0)
+                {
+                    Log::Info(PSTR("Wifi disconnect"));
+                }
+                disconnectTime++;
+                if (disconnectTime >= 10) // 10分钟未连上wifi则重启
+                {
+                    Log::Info(PSTR("Wifi reconnect TimeOut"));
+                    ESP_Restart();
+                }
+                WiFi.begin(globalConfig.wifi.ssid, globalConfig.wifi.pass);
             }
-            disconnectTime++;
-            if (disconnectTime >= 10) // 10分钟未连上wifi则重启
-            {
-                Log::Info(PSTR("Wifi reconnect TimeOut"));
-                ESP_Restart();
-            }
-            WiFi.begin(globalConfig.wifi.ssid, globalConfig.wifi.pass);
         }
     }
 }

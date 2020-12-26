@@ -19,6 +19,7 @@ void Http::handleRoot()
         return;
     }
 
+    char html[512] = {0};
     server->setContentLength(CONTENT_LENGTH_UNKNOWN);
     server->send_P(200, PSTR("text/html"), PSTR("<!DOCTYPE html><html lang='zh-cn'><head><meta charset='utf-8'/><meta name='viewport'content='width=device-width, initial-scale=1, user-scalable=no'/><title>"));
     server->sendContent(module ? module->getModuleCNName() : F("修复模式"));
@@ -45,7 +46,7 @@ void Http::handleRoot()
 
     // TAB 1 Start
     uint8_t mode = WiFi.getMode();
-    snprintf_P(tmpData, sizeof(tmpData),
+    snprintf_P(html, sizeof(html),
                PSTR("<div id='tab'>"
                     "<div id='tab1' style='display: block;'>"
                     "<table class='gridtable'><thead><tr><th colspan='2'>WiFi状态</th></tr></thead><tbody>"
@@ -55,9 +56,9 @@ void Http::handleRoot()
                UID,
                (mode == WIFI_STA ? PSTR("STA") : (mode == WIFI_AP ? PSTR("AP") : PSTR("AP STA"))),
                WiFi.SSID().c_str());
-    server->sendContent_P(tmpData);
+    server->sendContent_P(html);
 
-    snprintf_P(tmpData, sizeof(tmpData),
+    snprintf_P(html, sizeof(html),
                PSTR("<tr><td>RSSI</td><td>%ddBm</td></tr>"
                     "<tr><td>开机时间</td><td id='uptime'>%s</td></tr>"
                     "<tr><td>空闲内存</td><td><span id='free_mem'>%d</span> kB</td></tr>"
@@ -67,7 +68,7 @@ void Http::handleRoot()
                     "</div>"),
                WiFi.RSSI(), Rtc::msToHumanString(millis()).c_str(), ESP.getFreeHeap() / 1024,
                WiFi.localIP().toString().c_str(), (globalConfig.wifi.is_static ? PSTR("静态IP") : PSTR("DHCP")));
-    server->sendContent_P(tmpData);
+    server->sendContent_P(html);
     // TAB 1 End
 
     // TAB 2 Start
@@ -90,12 +91,12 @@ void Http::handleRoot()
              "<label class='bui-radios-label'><input type='radio' name='dhcp' value='2' onchange='dhcponchange(this)'/><i class='bui-radios'></i> 静态IP</label>"
              "</td></tr>"));
 
-    snprintf_P(tmpData, sizeof(tmpData),
+    snprintf_P(html, sizeof(html),
                PSTR("<tr class='dhcp_hide'><td>静态IP</td><td><input type='text' name='static_ip' value='%s'></td></tr>"
                     "<tr class='dhcp_hide'><td>子网掩码</td><td><input type='text' name='static_netmask' value='%s'></td></tr>"
                     "<tr class='dhcp_hide'><td>网关</td><td><input type='text' name='static_gateway' value='%s'></td></tr>"),
                globalConfig.wifi.ip, globalConfig.wifi.sn, globalConfig.wifi.gw);
-    server->sendContent_P(tmpData);
+    server->sendContent_P(html);
 
     server->sendContent_P(
         PSTR("<tr><td colspan='2'><button type='submit' class='btn-info'>保存</button></td></tr>"
@@ -105,14 +106,14 @@ void Http::handleRoot()
     server->sendContent_P(
         PSTR("<form method='post' action='/http' onsubmit='postform(this);return false'>"
              "<table class='gridtable'><thead><tr><th colspan='2'>WEB安全设置</th></tr></thead><tbody>"));
-    snprintf_P(tmpData, sizeof(tmpData),
+    snprintf_P(html, sizeof(html),
                PSTR("<tr><td>端口</td><td><input type='number' min='0' max='65535' name='http_port' required value='%d'>"
                     "<tr><td>用户名</td><td><input type='text' name='http_user' value='%s'></td></tr>"
                     "<tr><td>密码</td><td><input type='password' name='http_pass' value='%s'></td></tr>"
                     "<tr><td colspan='2'><button type='submit' class='btn-info'>保存</button></td></tr>"
                     "</tbody></table></form>"),
                globalConfig.http.port, globalConfig.http.user, globalConfig.http.pass);
-    server->sendContent_P(tmpData);
+    server->sendContent_P(html);
 
     server->sendContent_P(PSTR("</div>"));
     // TAB 2 End
@@ -123,23 +124,23 @@ void Http::handleRoot()
         PSTR("<div id='tab6'><form method='post' action='/mqtt' onsubmit='postform(this);return false'>"
              "<table class='gridtable'><thead><tr><th colspan='2'>MQTT设置</th></tr></thead><tbody>"));
 
-    snprintf_P(tmpData, sizeof(tmpData),
+    snprintf_P(html, sizeof(html),
                PSTR("<tr><td>地址</td><td><input type='text' name='mqtt_server' value='%s'></td></tr>"
                     "<tr><td>端口</td><td><input type='number' min='0' max='65535' name='mqtt_port' required value='%d'>&nbsp;&nbsp;&nbsp;&nbsp;0为不启动mqtt</td></tr>"),
                globalConfig.mqtt.server, globalConfig.mqtt.port);
-    server->sendContent_P(tmpData);
+    server->sendContent_P(html);
 
-    snprintf_P(tmpData, sizeof(tmpData),
+    snprintf_P(html, sizeof(html),
                PSTR("<tr><td>用户名</td><td><input type='text' name='mqtt_username' value='%s'></td></tr>"
                     "<tr><td>密码</td><td><input type='password' name='mqtt_password' value='%s'></td></tr>"),
                globalConfig.mqtt.user, globalConfig.mqtt.pass);
-    server->sendContent_P(tmpData);
+    server->sendContent_P(html);
 
-    snprintf_P(tmpData, sizeof(tmpData),
+    snprintf_P(html, sizeof(html),
                PSTR("<tr><td>主题</td><td><input type='text' name='mqtt_topic' value='%s' style='min-width:90%'></td></tr>"
                     "<tr><td>心跳上报间隔</td><td><input type='number' min='0' max='3600' name='interval' required value='%d'>&nbsp;秒&nbsp;&nbsp;0为不上报</td></tr>"),
                globalConfig.mqtt.topic, globalConfig.mqtt.interval);
-    server->sendContent_P(tmpData);
+    server->sendContent_P(html);
 
     server->sendContent_P(
         PSTR("<tr><td>保留(Retain)</td><td>"
@@ -147,23 +148,23 @@ void Http::handleRoot()
              "<label class='bui-radios-label'><input type='radio' name='retain' value='1'/><i class='bui-radios'></i> 开启</label><br>除非你知道它是干嘛的。"
              "</td></tr>"));
 
-    snprintf_P(tmpData, sizeof(tmpData),
+    snprintf_P(html, sizeof(html),
                PSTR("<tr><td>状态</td><td id='mqttconnected'>%s</td></tr>"
                     "<tr><td colspan='2'><button type='submit' class='btn-info'>保存</button></td></tr>"
                     "</tbody></table></form>"),
                Mqtt::mqttClient.connected() ? PSTR("已连接") : PSTR("未连接"));
-    server->sendContent_P(tmpData);
+    server->sendContent_P(html);
 
 #ifndef DISABLE_MQTT_DISCOVERY
     server->sendContent_P(
         PSTR("<form method='post' action='/discovery' onsubmit='postform(this);return false'>"
              "<table class='gridtable'><thead><tr><th colspan='2'>MQTT自动发现</th></tr></thead><tbody>"));
 
-    snprintf_P(tmpData, sizeof(tmpData),
+    snprintf_P(html, sizeof(html),
                PSTR("<tr><td>自发现状态</td><td id='discovery'>%s</td></tr>"
                     "<tr><td>自发现前缀</td><td><input type='text' name='discovery_prefix' required value='%s'></td></tr>"),
                globalConfig.mqtt.discovery ? PSTR("已启动") : PSTR("未启动"), globalConfig.mqtt.discovery_prefix);
-    server->sendContent_P(tmpData);
+    server->sendContent_P(html);
 
     server->sendContent_P(
         PSTR("<tr><td colspan='2'><button type='submit' class='btn-info' id='discovery_btn'>打开MQTT自动发现</button></td></tr>"
@@ -185,8 +186,8 @@ void Http::handleRoot()
         PSTR("<form method='post' action='/module_setting' onsubmit='postform(this);return false'>"
              "<table class='gridtable'><thead><tr><th colspan='2'>模块设置</th></tr></thead><tbody>"));
 
-    snprintf_P(tmpData, sizeof(tmpData), PSTR("<tr><td>主机名</td><td><input type='text' name='uid' value='%s' maxlength=15>&nbsp;具有唯一性，留空默认</td></tr>"), UID);
-    server->sendContent_P(tmpData);
+    snprintf_P(html, sizeof(html), PSTR("<tr><td>主机名</td><td><input type='text' name='uid' value='%s' maxlength=15>&nbsp;具有唯一性，留空默认</td></tr>"), UID);
+    server->sendContent_P(html);
 
     server->sendContent_P(
         PSTR("<tr><td>日志输出</td><td>"
@@ -201,21 +202,21 @@ void Http::handleRoot()
              "</td></tr>"));
 
 #ifdef USE_SYSLOG
-    snprintf_P(tmpData, sizeof(tmpData),
+    snprintf_P(html, sizeof(html),
                PSTR("<tr><td>syslog服务器</td><td>"
                     "<input type='text' name='log_syslog_host' style='width:150px' value='%s'> : "
                     "<input type='number' name='log_syslog_port' value='%d' min='0' max='65000' style='width:50px'>"
                     "</td></tr>"),
                globalConfig.debug.server, globalConfig.debug.port);
-    server->sendContent_P(tmpData);
+    server->sendContent_P(html);
 #endif
 
-    snprintf_P(tmpData, sizeof(tmpData),
+    snprintf_P(html, sizeof(html),
                PSTR("<tr><td>NTP服务器</td><td>"
                     "<input type='text' name='ntp' style='width:150px' value='%s'> 建议在获取时间失败时才填写"
                     "</td></tr>"),
                globalConfig.wifi.ntp);
-    server->sendContent_P(tmpData);
+    server->sendContent_P(html);
 
     server->sendContent_P(
         PSTR("<tr><td colspan='2'><button type='submit' class='btn-info'>设置</button></td></tr>"
@@ -232,7 +233,7 @@ void Http::handleRoot()
         PSTR("<div id='tab4'>"
              "<table class='gridtable'><thead><tr><th colspan='2'>硬件参数</th></tr></thead><tbody>"));
 
-    snprintf_P(tmpData, sizeof(tmpData),
+    snprintf_P(html, sizeof(html),
                PSTR("<tr><td>ESP芯片ID</td><td>%d</td></tr>"
 #ifdef ESP8266
                     "<tr><td>Flash芯片 ID</td><td>%d</td></tr>"
@@ -245,25 +246,25 @@ void Http::handleRoot()
                ESP.getFlashChipId(), ESP.getFlashChipRealSize() / 1024,
 #endif
                ESP.getFlashChipSize() / 1024, ESP_getSketchSize() / 1024);
-    server->sendContent_P(tmpData);
+    server->sendContent_P(html);
 
     uint8_t mac[6];
     WiFi.macAddress(mac);
-    snprintf_P(tmpData, sizeof(tmpData),
+    snprintf_P(html, sizeof(html),
                PSTR("<tr><td>空闲程序空间</td><td>%d kB</td></tr>"
                     "<tr><td>内核和SDK版本</td><td>" ARDUINO_ESP8266_RELEASE "%s</td></tr>"
                     "<tr><td>重启原因</td><td>%s</td></tr>"
                     "<tr><td>MAC地址</td><td>%02X:%02X:%02X:%02X:%02X:%02X</td></tr>"
                     "</tbody></table>"),
                ESP.getFreeSketchSpace() / 1024, ESP.getSdkVersion(), ESP_getResetReason().c_str(), mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
-    server->sendContent_P(tmpData);
+    server->sendContent_P(html);
 
-    snprintf_P(tmpData, sizeof(tmpData),
+    snprintf_P(html, sizeof(html),
                PSTR("<table class='gridtable'><thead><tr><th colspan='2'>固件升级</th></tr></thead><tbody>"
                     "<tr><td>当前版本</td><td>v%s</td></tr>"
                     "<tr><td>编译时间</td><td>%s</td></tr>"),
                module ? module->getModuleVersion().c_str() : PSTR("0"), Rtc::GetBuildDateAndTime().c_str());
-    server->sendContent_P(tmpData);
+    server->sendContent_P(html);
 
     server->sendContent_P(
         PSTR("<form method='POST' action='/update' enctype='multipart/form-data' onsubmit='postupdate(this);return false'>"
@@ -293,13 +294,13 @@ void Http::handleRoot()
         PSTR("</div><div style='text-align:center;margin-top:20px'>开发者：<a href='https://github.com/qlwz' target='_blank' style='color:#333;text-decoration:none'>情留メ蚊子</a>&nbsp;&nbsp;&nbsp;<a href='https://bbs.iobroker.cn' target='_blank' style='color:#333;text-decoration:none'>来和大神一起玩智能家居</a></div><div></body></html>"));
 
     // TAB 2
-    snprintf_P(tmpData, sizeof(tmpData), PSTR("<script type='text/javascript'>%ssetRadioValue('dhcp', '%d');dhcponchange(null);"),
+    snprintf_P(html, sizeof(html), PSTR("<script type='text/javascript'>%ssetRadioValue('dhcp', '%d');dhcponchange(null);"),
                WiFi.isConnected() ? PSTR("") : PSTR("scanWifi();"), globalConfig.wifi.is_static ? 2 : 1);
-    server->sendContent_P(tmpData);
+    server->sendContent_P(html);
 
 #ifndef DISABLE_MQTT
-    snprintf_P(tmpData, sizeof(tmpData), PSTR("setRadioValue('retain', '%d');"), globalConfig.mqtt.retain ? 1 : 0);
-    server->sendContent_P(tmpData);
+    snprintf_P(html, sizeof(html), PSTR("setRadioValue('retain', '%d');"), globalConfig.mqtt.retain ? 1 : 0);
+    server->sendContent_P(html);
 
 #ifndef DISABLE_MQTT_DISCOVERY
     if (globalConfig.mqtt.discovery)
@@ -528,6 +529,7 @@ void Http::handleScanWifi()
 
     int _minimumQuality = -1;
     int quality;
+    char html[256] = {0};
     server->setContentLength(CONTENT_LENGTH_UNKNOWN);
     server->send_P(200, PSTR("text/html"), PSTR("{\"code\":1,\"msg\":\"\",\"data\":{\"list\":["));
     for (int i = 0; i < n; i++)
@@ -553,8 +555,8 @@ void Http::handleScanWifi()
             {
                 server->sendContent_P(PSTR(","));
             }
-            snprintf_P(tmpData, sizeof(tmpData), PSTR("{\"name\":\"%s\",\"rssi\":%d,\"quality\":%d,\"type\":%d}"), WiFi.SSID(indices[i]).c_str(), RSSI, quality, indices[i]);
-            server->sendContent_P(tmpData);
+            snprintf_P(html, sizeof(html), PSTR("{\"name\":\"%s\",\"rssi\":%d,\"quality\":%d,\"type\":%d}"), WiFi.SSID(indices[i]).c_str(), RSSI, quality, indices[i]);
+            server->sendContent_P(html);
         }
     }
 
@@ -637,13 +639,14 @@ void Http::handleNotFound()
     server->sendHeader(PSTR("Pragma"), PSTR("no-cache"));
     server->sendHeader(PSTR("Expires"), PSTR("-1"));
 
-    snprintf_P(tmpData, sizeof(tmpData), PSTR("File Not Found\n\nURI: %s\nMethod: %s\nArguments: %d\n"),
+    char html[256] = {0};
+    snprintf_P(html, sizeof(html), PSTR("File Not Found\n\nURI: %s\nMethod: %s\nArguments: %d\n"),
                server->uri().c_str(), server->method() == HTTP_GET ? PSTR("GET") : PSTR("POST"), server->args());
-    server->send_P(404, PSTR("text/plain"), tmpData);
+    server->send_P(404, PSTR("text/plain"), html);
     for (uint8_t i = 0; i < server->args(); i++)
     {
-        snprintf_P(tmpData, sizeof(tmpData), PSTR(" %s: %s\n"), server->argName(i).c_str(), server->arg(i).c_str());
-        server->sendContent_P(tmpData);
+        snprintf_P(html, sizeof(html), PSTR(" %s: %s\n"), server->argName(i).c_str(), server->arg(i).c_str());
+        server->sendContent_P(html);
     }
 }
 
@@ -657,11 +660,12 @@ void Http::handleGetStatus()
     server->setContentLength(CONTENT_LENGTH_UNKNOWN);
     server->send_P(200, PSTR("text/html"), PSTR("{\"code\":1,\"msg\":\"\",\"data\":{"));
 
-    snprintf_P(tmpData, sizeof(tmpData), PSTR("\"uptime\":\"%s\",\"free_mem\":%d"), Rtc::msToHumanString(millis()).c_str(), ESP.getFreeHeap() / 1024);
-    server->sendContent_P(tmpData);
+    char html[512] = {0};
+    snprintf_P(html, sizeof(html), PSTR("\"uptime\":\"%s\",\"free_mem\":%d"), Rtc::msToHumanString(millis()).c_str(), ESP.getFreeHeap() / 1024);
+    server->sendContent_P(html);
 
 #ifndef DISABLE_MQTT
-    if (Mqtt::mqttClient.connected())
+    if (bitRead(Config::statusFlag, 1))
     {
         server->sendContent_P(PSTR(",\"mqttconnected\":\"已连接\""));
     }
@@ -671,15 +675,15 @@ void Http::handleGetStatus()
     }
 
 #ifndef DISABLE_MQTT_DISCOVERY
-    snprintf_P(tmpData, sizeof(tmpData), PSTR(",\"discovery\":%d"), globalConfig.mqtt.discovery ? 1 : 0);
-    server->sendContent_P(tmpData);
+    snprintf_P(html, sizeof(html), PSTR(",\"discovery\":%d"), globalConfig.mqtt.discovery ? 1 : 0);
+    server->sendContent_P(html);
 #endif
 #endif
 
     if (WifiMgr::configPortalStart == 0 && WiFi.isConnected())
     {
-        snprintf_P(tmpData, sizeof(tmpData), PSTR(",\"ip\":\"%s\""), WiFi.localIP().toString().c_str());
-        server->sendContent_P(tmpData);
+        snprintf_P(html, sizeof(html), PSTR(",\"ip\":\"%s\""), WiFi.localIP().toString().c_str());
+        server->sendContent_P(html);
     }
 
     if (module)
@@ -699,8 +703,8 @@ void Http::handleGetStatus()
     {
         counter = server->arg(F("i")).toInt();
     }
-    snprintf_P(tmpData, sizeof(tmpData), PSTR(",\"logindex\":%d,\"log\":\""), Log::webLogIndex);
-    server->sendContent_P(tmpData);
+    snprintf_P(html, sizeof(html), PSTR(",\"logindex\":%d,\"log\":\""), Log::webLogIndex);
+    server->sendContent_P(html);
     if (counter != Log::webLogIndex)
     {
         if (!counter)
@@ -726,42 +730,42 @@ void Http::handleGetStatus()
                     char each = tmp[i];
                     if (each == '\\' || each == '"')
                     {
-                        tmpData[j++] = '\\';
-                        tmpData[j++] = each;
+                        html[j++] = '\\';
+                        html[j++] = each;
                     }
                     else if (each == '\b')
                     {
-                        tmpData[j++] = '\\';
-                        tmpData[j++] = 'b';
+                        html[j++] = '\\';
+                        html[j++] = 'b';
                     }
                     else if (each == '\f')
                     {
-                        tmpData[j++] = '\\';
-                        tmpData[j++] = 'f';
+                        html[j++] = '\\';
+                        html[j++] = 'f';
                     }
                     else if (each == '\n')
                     {
-                        tmpData[j++] = '\\';
-                        tmpData[j++] = 'n';
+                        html[j++] = '\\';
+                        html[j++] = 'n';
                     }
                     else if (each == '\r')
                     {
-                        tmpData[j++] = '\\';
-                        tmpData[j++] = 'r';
+                        html[j++] = '\\';
+                        html[j++] = 'r';
                     }
                     else if (each == '\t')
                     {
-                        tmpData[j++] = '\\';
-                        tmpData[j++] = 't';
+                        html[j++] = '\\';
+                        html[j++] = 't';
                     }
                     else
                     {
-                        tmpData[j++] = each;
+                        html[j++] = each;
                     }
                 }
-                tmpData[j++] = '\0';
+                html[j++] = '\0';
 
-                server->sendContent_P(tmpData);
+                server->sendContent_P(html);
                 cflg = true;
             }
             counter++;
@@ -785,85 +789,86 @@ void Http::handleUpdate()
     }
     if (Update.hasError())
     {
+        char html[256] = {0};
         uint8_t _error = Update.getError();
         if (_error == UPDATE_ERROR_WRITE)
         {
-            snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Flash Write Failed"), _error);
+            snprintf_P(html, sizeof(html), PSTR("Update Error[%u]: Flash Write Failed"), _error);
         }
         else if (_error == UPDATE_ERROR_ERASE)
         {
-            snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Flash Erase Failed"), _error);
+            snprintf_P(html, sizeof(html), PSTR("Update Error[%u]: Flash Erase Failed"), _error);
         }
         else if (_error == UPDATE_ERROR_READ)
         {
-            snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Flash Read Failed"), _error);
+            snprintf_P(html, sizeof(html), PSTR("Update Error[%u]: Flash Read Failed"), _error);
         }
         else if (_error == UPDATE_ERROR_SPACE)
         {
-            snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Not Enough Space"), _error);
+            snprintf_P(html, sizeof(html), PSTR("Update Error[%u]: Not Enough Space"), _error);
         }
         else if (_error == UPDATE_ERROR_SIZE)
         {
-            snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Bad Size Given"), _error);
+            snprintf_P(html, sizeof(html), PSTR("Update Error[%u]: Bad Size Given"), _error);
         }
         else if (_error == UPDATE_ERROR_STREAM)
         {
-            snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Stream Read Timeout"), _error);
+            snprintf_P(html, sizeof(html), PSTR("Update Error[%u]: Stream Read Timeout"), _error);
         }
         else if (_error == UPDATE_ERROR_MAGIC_BYTE)
         {
-            snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Magic byte is wrong, not 0xE9"), _error);
+            snprintf_P(html, sizeof(html), PSTR("Update Error[%u]: Magic byte is wrong, not 0xE9"), _error);
 #ifdef ESP8266
         }
         else if (_error == UPDATE_ERROR_SIGN)
         {
-            snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Signature verification failed"), _error);
+            snprintf_P(html, sizeof(html), PSTR("Update Error[%u]: Signature verification failed"), _error);
         }
         else if (_error == UPDATE_ERROR_FLASH_CONFIG)
         {
-            snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Flash config wrong real: %d IDE: %d"), _error, ESP.getFlashChipRealSize(), ESP.getFlashChipSize());
+            snprintf_P(html, sizeof(html), PSTR("Update Error[%u]: Flash config wrong real: %d IDE: %d"), _error, ESP.getFlashChipRealSize(), ESP.getFlashChipSize());
         }
         else if (_error == UPDATE_ERROR_NEW_FLASH_CONFIG)
         {
-            snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: new Flash config wrong real: %d"), _error, ESP.getFlashChipRealSize());
+            snprintf_P(html, sizeof(html), PSTR("Update Error[%u]: new Flash config wrong real: %d"), _error, ESP.getFlashChipRealSize());
         }
         else if (_error == UPDATE_ERROR_BOOTSTRAP)
         {
-            snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Invalid bootstrapping state, reset ESP8266 before updating"), _error);
+            snprintf_P(html, sizeof(html), PSTR("Update Error[%u]: Invalid bootstrapping state, reset ESP8266 before updating"), _error);
 #else
         }
         else if (_error == UPDATE_ERROR_MD5)
         {
-            snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: MD5 Check Failed"), _error);
+            snprintf_P(html, sizeof(html), PSTR("Update Error[%u]: MD5 Check Failed"), _error);
         }
         else if (_error == UPDATE_ERROR_MAGIC_BYTE)
         {
-            snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Wrong Magic Byte"), _error);
+            snprintf_P(html, sizeof(html), PSTR("Update Error[%u]: Wrong Magic Byte"), _error);
         }
         else if (_error == UPDATE_ERROR_ACTIVATE)
         {
-            snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Could Not Activate The Firmware"), _error);
+            snprintf_P(html, sizeof(html), PSTR("Update Error[%u]: Could Not Activate The Firmware"), _error);
         }
         else if (_error == UPDATE_ERROR_NO_PARTITION)
         {
-            snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Partition Could Not be Found"), _error);
+            snprintf_P(html, sizeof(html), PSTR("Update Error[%u]: Partition Could Not be Found"), _error);
         }
         else if (_error == UPDATE_ERROR_BAD_ARGUMENT)
         {
-            snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Bad Argument"), _error);
+            snprintf_P(html, sizeof(html), PSTR("Update Error[%u]: Bad Argument"), _error);
         }
         else if (_error == UPDATE_ERROR_ABORT)
         {
-            snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: Aborted"), _error);
+            snprintf_P(html, sizeof(html), PSTR("Update Error[%u]: Aborted"), _error);
 #endif
         }
         else
         {
-            snprintf_P(tmpData, sizeof(tmpData), PSTR("Update Error[%u]: UNKNOWN"), _error);
+            snprintf_P(html, sizeof(html), PSTR("Update Error[%u]: UNKNOWN"), _error);
         }
-        Log::Record(LOG_LEVEL_ERROR);
+        Log::Error(html);
         char out[150] = {0};
-        snprintf_P(out, sizeof(out), PSTR("{\"code\":0,\"msg\":\"%s\"}"), tmpData);
+        snprintf_P(out, sizeof(out), PSTR("{\"code\":0,\"msg\":\"%s\"}"), html);
         server->send_P(200, PSTR("text/html"), out);
     }
     else
