@@ -144,7 +144,10 @@ void Framework::setup()
         Rtc::init();
     }
     Http::init();
-    callModule(FUNC_INIT);
+    if (module)
+    {
+        callModule(FUNC_INIT);
+    }
 
     tickerPerSecond = new Ticker();
     tickerPerSecond->attach(1, tickerPerSecondDo);
@@ -212,10 +215,6 @@ void Framework::loop()
     if (my_activity < 50)
     {
         sleepDelay(50 - my_activity);
-    }
-    else if (!bitRead(Config::statusFlag, 0))
-    {
-        sleepDelay(my_activity / 2);
     }
     else
     {

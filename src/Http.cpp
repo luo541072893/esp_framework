@@ -331,6 +331,7 @@ void Http::handleRoot()
         server->sendContent_P(PSTR("setRadioValue('log_serial1', '1');"));
     }
     server->sendContent_P(PSTR("</script>"));
+    server->sendContent("");
 }
 
 #ifndef DISABLE_MQTT
@@ -561,6 +562,7 @@ void Http::handleScanWifi()
     }
 
     server->sendContent_P(PSTR("]}}"));
+    server->sendContent("");
 }
 
 void Http::handleWifi()
@@ -648,6 +650,7 @@ void Http::handleNotFound()
         snprintf_P(html, sizeof(html), PSTR(" %s: %s\n"), server->argName(i).c_str(), server->arg(i).c_str());
         server->sendContent_P(html);
     }
+    server->sendContent("");
 }
 
 void Http::handleGetStatus()
@@ -779,6 +782,7 @@ void Http::handleGetStatus()
 #else
     server->sendContent_P(PSTR("}}"));
 #endif
+    server->sendContent("");
 }
 
 void Http::handleUpdate()

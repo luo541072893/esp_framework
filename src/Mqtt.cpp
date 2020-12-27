@@ -119,7 +119,7 @@ bool Mqtt::callModule(uint8_t function)
     case FUNC_EVERY_SECOND:
         perSecondDo();
         break;
-    case FUNC_LOOP:
+    case FUNC_EVERY_50_MSECOND:
         loop();
         break;
     }

@@ -5,9 +5,6 @@
 #define _MQTT_h
 
 #include "Arduino.h"
-
-#define MQTT_SOCKET_TIMEOUT 5
-#define MQTT_MAX_PACKET_SIZE 768
 #include <PubSubClient.h>
 
 #define MQTT_CONNECTED_CALLBACK_SIGNATURE std::function<void()> connectedcallback

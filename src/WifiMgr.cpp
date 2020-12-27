@@ -67,8 +67,11 @@ void WifiMgr::setupWifi()
     delay(200);
     WiFi.mode(WIFI_STA);
     delay(100);
-    WiFi.setAutoConnect(true);
-    WiFi.setAutoReconnect(true);
+    if (!WiFi.getAutoConnect())
+    {
+        WiFi.setAutoConnect(true);
+    }
+    //WiFi.setAutoReconnect(true);
     WIFI_setHostname(UID);
     Log::Info(PSTR("Connecting to %s %s Wifi"), globalConfig.wifi.ssid, globalConfig.wifi.pass);
 #ifdef ESP8266
