@@ -122,7 +122,13 @@ void Http::handleRoot()
 #ifndef DISABLE_MQTT
     server->sendContent_P(
         PSTR("<div id='tab6'><form method='post' action='/mqtt' onsubmit='postform(this);return false'>"
-             "<table class='gridtable'><thead><tr><th colspan='2'>MQTT设置</th></tr></thead><tbody>"));
+             "<table class='gridtable'><thead><tr><th colspan='2'>"
+#ifdef USE_ASYNC_MQTT_CLIENT
+             "MQTT设置（异步）"
+#else
+             "MQTT设置"
+#endif
+             "</th></tr></thead><tbody>"));
 
     snprintf_P(html, sizeof(html),
                PSTR("<tr><td>地址</td><td><input type='text' name='mqtt_server' value='%s'></td></tr>"

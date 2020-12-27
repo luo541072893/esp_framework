@@ -118,15 +118,7 @@ void Framework::setup()
         sprintf(UID, "%s_%02x%02x%02x", module->getModuleName().c_str(), mac[3], mac[4], mac[5]);
     }
     Util::strlowr(UID);
-
     Log::Info(PSTR("UID: %s"), UID);
-    // Log::Info(PSTR("Config Len: %d"), GlobalConfigMessage_size + 6);
-
-    //Config::resetConfig();
-    if (MQTT_MAX_PACKET_SIZE == 128)
-    {
-        Log::Error(PSTR("WRONG PUBSUBCLIENT LIBRARY USED PLEASE INSTALL THE ONE FROM OMG LIB FOLDER"));
-    }
 
     WifiMgr::connectWifi();
     if (rebootCount >= 3)

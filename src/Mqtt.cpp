@@ -9,6 +9,10 @@ PubSubClient Mqtt::mqttClient;
 uint32_t Mqtt::lastReconnectAttempt = 0; // 最后尝试重连时间
 uint32_t Mqtt::kMqttReconnectTime = 60;  // 重新连接尝试之间的延迟（秒）
 std::function<void()> Mqtt::connectedcallback = NULL;
+#ifdef USE_ASYNC_MQTT_CLIENT
+std::function<void(char *, uint8_t *, unsigned int)> Mqtt::callback = NULL;
+char mqttWill[80] = {0};
+#endif
 
 bool Mqtt::mqttConnect()
 {
@@ -28,9 +32,18 @@ bool Mqtt::mqttConnect()
     }
 
     Log::Info(PSTR("mqtt connect to %s:%d Broker"), globalConfig.mqtt.server, globalConfig.mqtt.port);
+#ifdef USE_ASYNC_MQTT_CLIENT
+    mqttClient.setClientId(UID);
+    mqttClient.setServer(globalConfig.mqtt.server, globalConfig.mqtt.port);
+    mqttClient.setCredentials(globalConfig.mqtt.user, globalConfig.mqtt.pass);
+    strcpy(mqttWill, getTeleTopic(F("availability")).c_str());
+    mqttClient.setWill(mqttWill, 0, true, "offline", 7);
+    mqttClient.connect();
+#else
     mqttClient.setServer(globalConfig.mqtt.server, globalConfig.mqtt.port);
     if (mqttClient.connect(UID, globalConfig.mqtt.user, globalConfig.mqtt.pass, getTeleTopic(F("availability")).c_str(), 0, true, "offline"))
     {
+        bitSet(Config::statusFlag, 1);
         Log::Info(PSTR("mqtt connection successful"));
         availability();
         if (globalConfig.mqtt.interval > 0)
@@ -46,6 +59,7 @@ bool Mqtt::mqttConnect()
     {
         Log::Info(PSTR("mqtt connection failed, rc=%d"), mqttClient.state());
     }
+#endif
     return mqttClient.connected();
 }
 
@@ -102,6 +116,7 @@ void Mqtt::loop()
     {
         return;
     }
+#ifndef USE_ASYNC_MQTT_CLIENT
     if (mqttClient.loop())
     {
         bitSet(Config::statusFlag, 1);
@@ -110,6 +125,7 @@ void Mqtt::loop()
     {
         bitClear(Config::statusFlag, 1);
     }
+#endif
 }
 
 bool Mqtt::callModule(uint8_t function)
@@ -119,7 +135,7 @@ bool Mqtt::callModule(uint8_t function)
     case FUNC_EVERY_SECOND:
         perSecondDo();
         break;
-    case FUNC_EVERY_50_MSECOND:
+    case FUNC_LOOP:
         loop();
         break;
     }
@@ -143,27 +159,58 @@ String Mqtt::getTeleTopic(String topic)
 
 void Mqtt::mqttSetLoopCallback(MQTT_CALLBACK_SIGNATURE)
 {
+#ifdef USE_ASYNC_MQTT_CLIENT
+    Mqtt::callback = callback;
+    mqttClient.onMessage([&](char *topic, char *payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total) {
+        Mqtt::callback(topic, (byte *)payload, len);
+    });
+#else
     mqttClient.setCallback(callback);
+#endif
 }
 
 void Mqtt::mqttSetConnectedCallback(MQTT_CONNECTED_CALLBACK_SIGNATURE)
 {
     Mqtt::connectedcallback = connectedcallback;
+#ifdef USE_ASYNC_MQTT_CLIENT
+    mqttClient.onConnect([&](bool sessionPresent) {
+        bitSet(Config::statusFlag, 1);
+        Log::Info(PSTR("successful client mqtt connection"));
+        availability();
+        if (globalConfig.mqtt.interval > 0)
+        {
+            doReportInfo();
+        }
+        Mqtt::connectedcallback();
+    });
+#endif
 }
 
 PubSubClient &Mqtt::setClient(Client &client)
 {
+#ifdef USE_ASYNC_MQTT_CLIENT
+    return mqttClient;
+#else
     return mqttClient.setClient(client);
+#endif
 }
 
 bool Mqtt::publish(const char *topic, const char *payload, bool retained)
 {
+#ifdef USE_ASYNC_MQTT_CLIENT
+    return mqttClient.publish(topic, 0, retained, payload);
+#else
     return mqttClient.publish(topic, payload, retained);
+#endif
 }
 
 bool Mqtt::publish(const char *topic, const uint8_t *payload, unsigned int plength, bool retained)
 {
+#ifdef USE_ASYNC_MQTT_CLIENT
+    return mqttClient.publish(topic, 0, retained, (const char *)payload, plength);
+#else
     return mqttClient.publish(topic, payload, plength, retained);
+#endif
 }
 
 bool Mqtt::subscribe(const char *topic, uint8_t qos)
