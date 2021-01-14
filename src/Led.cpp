@@ -1,5 +1,6 @@
 #include "Led.h"
 #include "Module.h"
+#include "ETH.h"
 
 Ticker *Led::ledTicker;
 Ticker *Led::ledTicker2;
@@ -35,7 +36,7 @@ void Led::loop()
         }
         Led::ledType = 3;
     }
-    else if (!bitRead(Config::statusFlag, 0))
+    else if (!bitRead(Config::statusFlag, 0) && !bitRead(Config::statusFlag, 2))
     {
         if (Led::ledType != 0)
         {

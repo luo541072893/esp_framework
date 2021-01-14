@@ -60,7 +60,7 @@ private:
 
 public:
     static uint8_t operationFlag; // 0每秒
-    static uint8_t statusFlag;    // 0：wifi状态 1：MQTT状态
+    static uint8_t statusFlag;    // 0：wifi状态 1：MQTT状态 2：Lan状态
     static uint16_t crc16(uint8_t *ptr, uint16_t len);
 
     static void readConfig();

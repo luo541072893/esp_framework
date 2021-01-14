@@ -5,6 +5,7 @@
 #include "WifiMgr.h"
 #include "Log.h"
 #include "Http.h"
+#include "ETH.h"
 
 #ifdef ESP8266
 WiFiEventHandler WifiMgr::STAGotIP;
@@ -38,6 +39,29 @@ void WifiMgr::wiFiEvent(WiFiEvent_t event)
         {
             isDHCP = false;
         }
+        break;
+    case SYSTEM_EVENT_ETH_START:
+        Log::Info(PSTR("ETH Started"));
+        char hostx[30];
+        sprintf(hostx, "%s_eth", UID);
+        ETH.setHostname(hostx);
+        break;
+    case SYSTEM_EVENT_ETH_CONNECTED:
+        Log::Info(PSTR("ETH Connected"));
+        break;
+    case SYSTEM_EVENT_ETH_GOT_IP:
+        Log::Info(PSTR("ETH MAC: %s, IPv4: %s, %dMbps"), ETH.macAddress().c_str(), ETH.localIP().toString().c_str(), ETH.linkSpeed());
+        bitSet(Config::statusFlag, 2);
+        WiFi.disconnect(true);
+        WiFi.setAutoConnect(false);
+        break;
+    case SYSTEM_EVENT_ETH_DISCONNECTED:
+        Log::Info(PSTR("ETH Disconnected"));
+        bitClear(Config::statusFlag, 2);
+        break;
+    case SYSTEM_EVENT_ETH_STOP:
+        Log::Info(PSTR("ETH Stopped"));
+        bitClear(Config::statusFlag, 2);
         break;
     }
 }
@@ -171,6 +195,13 @@ void WifiMgr::perSecondDo()
 {
     if (perSecond % 60 == 0)
     {
+#ifdef ESP32
+        if (ETH.localIP())
+        {
+            bitSet(Config::statusFlag, 2);
+            return;
+        }
+#endif
         if (WiFi.isConnected()) // 如果连接了。重置未连接时间
         {
             bitSet(Config::statusFlag, 0);
