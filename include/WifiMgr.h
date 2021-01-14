@@ -36,7 +36,6 @@ public:
 #else
     static void wiFiEvent(WiFiEvent_t event);
 #endif
-    static WiFiClient wifiClient;
     static void connectWifi();
     static void setupWifi();
     static void setupWifiManager(bool resetSettings);

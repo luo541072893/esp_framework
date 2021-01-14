@@ -6,6 +6,7 @@
 
 uint16_t Framework::rebootCount = 0;
 #ifndef DISABLE_MQTT
+WiFiClient wifiClient;
 void Framework::callback(char *topic, byte *payload, unsigned int length)
 {
     Log::Info(PSTR("Subscribe: %s payload: %.*s"), topic, length, payload);
@@ -128,7 +129,8 @@ void Framework::setup()
     else
     {
 #ifndef DISABLE_MQTT
-        Mqtt::setClient(WifiMgr::wifiClient);
+        wifiClient.setTimeout(200);
+        Mqtt::setClient(wifiClient);
         Mqtt::mqttSetConnectedCallback(connectedCallback);
         Mqtt::mqttSetLoopCallback(callback);
 #endif
@@ -143,31 +145,6 @@ void Framework::setup()
 
     tickerPerSecond = new Ticker();
     tickerPerSecond->attach(1, tickerPerSecondDo);
-}
-
-void Framework::sleepDelay(uint32_t mseconds)
-{
-    if (mseconds)
-    {
-        for (uint32_t wait = 0; wait < mseconds; wait++)
-        {
-            delay(1);
-            if (Serial.available())
-            {
-                break;
-            }
-#ifdef ESP32
-            if (Serial1.available())
-            {
-                break;
-            }
-#endif
-        }
-    }
-    else
-    {
-        delay(0);
-    }
 }
 
 void Framework::loop()
@@ -202,14 +179,5 @@ void Framework::loop()
             module->perSecondDo();
         }
     }
-
-    uint32_t my_activity = millis() - my_sleep;
-    if (my_activity < 50)
-    {
-        sleepDelay(50 - my_activity);
-    }
-    else
-    {
-        delay(1);
-    }
+    delay(1);
 }

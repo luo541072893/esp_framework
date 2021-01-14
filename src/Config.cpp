@@ -114,7 +114,7 @@ void Config::readConfig()
 #ifdef ESP8266
     if (spi_flash_read(EEPROM_PHYS_ADDR, (uint32 *)buf, 6) != SPI_FLASH_RESULT_OK)
 #else
-    if (!spiflash_read(EEPROM_PHYS_ADDR, (uint32_t *)buf, 6))
+    if (!espconfig_spiflash_read(EEPROM_PHYS_ADDR, (uint32_t *)buf, 6))
 #endif
     {
     }
@@ -137,7 +137,7 @@ void Config::readConfig()
 #ifdef ESP8266
         if (spi_flash_read(EEPROM_PHYS_ADDR + 6, (uint32 *)data, len) == SPI_FLASH_RESULT_OK)
 #else
-        if (spiflash_read(EEPROM_PHYS_ADDR + 6, (uint32_t *)data, len))
+        if (espconfig_spiflash_read(EEPROM_PHYS_ADDR + 6, (uint32_t *)data, len))
 #endif
         {
             uint16_t crc = crc16(data, len);
@@ -210,7 +210,7 @@ bool Config::saveConfig(bool isEverySecond)
 #ifdef ESP8266
     if (spi_flash_read(EEPROM_PHYS_ADDR, (uint32 *)data, SPI_FLASH_SEC_SIZE) != SPI_FLASH_RESULT_OK)
 #else
-    if (!spiflash_read(EEPROM_PHYS_ADDR, (uint32_t *)data, SPI_FLASH_SEC_SIZE))
+    if (!espconfig_spiflash_read(EEPROM_PHYS_ADDR, (uint32_t *)data, SPI_FLASH_SEC_SIZE))
 #endif
     {
         free(data);
@@ -234,7 +234,7 @@ bool Config::saveConfig(bool isEverySecond)
 #ifdef ESP8266
     if (spi_flash_erase_sector(EEPROM_PHYS_ADDR / SPI_FLASH_SEC_SIZE) != SPI_FLASH_RESULT_OK)
 #else
-    if (!spiflash_erase_sector(EEPROM_PHYS_ADDR / SPI_FLASH_SEC_SIZE))
+    if (!espconfig_spiflash_erase_sector(EEPROM_PHYS_ADDR / SPI_FLASH_SEC_SIZE))
 #endif
     {
         free(data);
@@ -246,7 +246,7 @@ bool Config::saveConfig(bool isEverySecond)
 #ifdef ESP8266
     if (spi_flash_write(EEPROM_PHYS_ADDR, (uint32 *)data, SPI_FLASH_SEC_SIZE) != SPI_FLASH_RESULT_OK)
 #else
-    if (!spiflash_write(EEPROM_PHYS_ADDR, (uint32_t *)data, SPI_FLASH_SEC_SIZE))
+    if (!espconfig_spiflash_write(EEPROM_PHYS_ADDR, (uint32_t *)data, SPI_FLASH_SEC_SIZE))
 #endif
     {
         free(data);

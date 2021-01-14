@@ -5,7 +5,7 @@
 
 EEPROMClass EEPROMconfig("espconfig", SPI_FLASH_SEC_SIZE);
 bool isIniteeprom = false;
-bool spiflash_init()
+bool espconfig_spiflash_init()
 {
     if (isIniteeprom)
     {
@@ -22,9 +22,9 @@ bool spiflash_init()
     return true;
 }
 
-bool spiflash_erase_sector(size_t sector)
+bool espconfig_spiflash_erase_sector(size_t sector)
 {
-    spiflash_init();
+    espconfig_spiflash_init();
     for (int i = 0; i < SPI_FLASH_SEC_SIZE; i++)
     {
         EEPROMconfig.write(i, 0xFF);
@@ -32,9 +32,9 @@ bool spiflash_erase_sector(size_t sector)
     return EEPROMconfig.commit();
 }
 
-bool spiflash_write(size_t dest_addr, const void *src, size_t size)
+bool espconfig_spiflash_write(size_t dest_addr, const void *src, size_t size)
 {
-    spiflash_init();
+    espconfig_spiflash_init();
     if (EEPROMconfig.writeBytes(dest_addr, src, size) == 0)
     {
         return false;
@@ -42,9 +42,9 @@ bool spiflash_write(size_t dest_addr, const void *src, size_t size)
     return EEPROMconfig.commit();
 }
 
-bool spiflash_read(size_t src_addr, void *dest, size_t size)
+bool espconfig_spiflash_read(size_t src_addr, void *dest, size_t size)
 {
-    spiflash_init();
+    espconfig_spiflash_init();
     if (EEPROMconfig.readBytes(src_addr, dest, size) == 0)
     {
         return false;

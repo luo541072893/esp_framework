@@ -27,10 +27,6 @@
 
 #define DRAM_ATTR
 
-#define spiflash_read(addr, buffer, size) (spi_flash_read((addr), (buffer), (size)) == SPI_FLASH_RESULT_OK)
-#define spiflash_write(addr, data, size) (spi_flash_write((addr), (data), (size)) == SPI_FLASH_RESULT_OK)
-#define spiflash_erase_sector(addr) (spi_flash_erase_sector((addr) / SPI_FLASH_SEC_SIZE) == SPI_FLASH_RESULT_OK)
-
 #define PortUdp_write(p,n) PortUdp.write(p, n)
 
 extern "C" uint32_t _EEPROM_start; //See EEPROM.cpp
@@ -64,10 +60,10 @@ extern "C" uint32_t _EEPROM_start; //See EEPROM.cpp
 
 #define isFlashInterfacePin(p) 0
 
-bool spiflash_init();
-bool spiflash_erase_sector(size_t sector);
-bool spiflash_write(size_t dest_addr, const void *src, size_t size);
-bool spiflash_read(size_t src_addr, void *dest, size_t size);
+bool espconfig_spiflash_init();
+bool espconfig_spiflash_erase_sector(size_t sector);
+bool espconfig_spiflash_write(size_t dest_addr, const void *src, size_t size);
+bool espconfig_spiflash_read(size_t src_addr, void *dest, size_t size);
 
 #define PortUdp_write(p, n) PortUdp.write((const uint8_t *)p, n)
 

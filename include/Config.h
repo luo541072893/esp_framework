@@ -1,4 +1,5 @@
 // Config.h
+#ifdef __cplusplus
 
 #ifndef _CONFIG_h
 #define _CONFIG_h
@@ -59,7 +60,7 @@ private:
 
 public:
     static uint8_t operationFlag; // 0每秒
-    static uint8_t statusFlag; // 0：wifi状态 1：MQTT状态
+    static uint8_t statusFlag;    // 0：wifi状态 1：MQTT状态
     static uint16_t crc16(uint8_t *ptr, uint16_t len);
 
     static void readConfig();
@@ -73,4 +74,5 @@ public:
     static void perSecondDo();
     static bool callModule(uint8_t function);
 };
+#endif
 #endif

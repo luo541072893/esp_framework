@@ -10,7 +10,6 @@
 WiFiEventHandler WifiMgr::STAGotIP;
 //WiFiEventHandler WifiMgr::STADisconnected;
 #endif
-WiFiClient WifiMgr::wifiClient;
 bool WifiMgr::isDHCP = true;
 
 unsigned long WifiMgr::configPortalStart = 0;
@@ -187,11 +186,13 @@ void WifiMgr::perSecondDo()
                     Log::Info(PSTR("Wifi disconnect"));
                 }
                 disconnectTime++;
+#ifdef WIFI_DISCONNECT_RESTART
                 if (disconnectTime >= 10) // 10分钟未连上wifi则重启
                 {
                     Log::Info(PSTR("Wifi reconnect TimeOut"));
                     ESP_Restart();
                 }
+#endif
                 WiFi.begin(globalConfig.wifi.ssid, globalConfig.wifi.pass);
             }
         }
