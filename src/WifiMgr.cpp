@@ -199,6 +199,12 @@ void WifiMgr::perSecondDo()
         if (ETH.localIP())
         {
             bitSet(Config::statusFlag, 2);
+            if (bitRead(Config::statusFlag, 0))
+            {
+                WiFi.disconnect(true);
+                WiFi.setAutoConnect(false);
+                bitClear(Config::statusFlag, 0);
+            }
             return;
         }
 #endif
