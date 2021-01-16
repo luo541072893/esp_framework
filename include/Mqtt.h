@@ -31,6 +31,7 @@ public:
     static char mqttwill[80];
 #endif
 
+    static uint32_t disconnectCounter; // 重连次数
     static uint32_t lastReconnectAttempt; // 最后尝试重连时间
     static uint32_t kMqttReconnectTime;   // 重新连接尝试之间的延迟（秒）
 

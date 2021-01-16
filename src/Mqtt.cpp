@@ -6,8 +6,9 @@
 
 uint8_t Mqtt::operationFlag = 0;
 PubSubClient Mqtt::mqttClient;
+uint32_t Mqtt::disconnectCounter = 0;    // 重连次数
 uint32_t Mqtt::lastReconnectAttempt = 0; // 最后尝试重连时间
-uint32_t Mqtt::kMqttReconnectTime = 60;  // 重新连接尝试之间的延迟（秒）
+uint32_t Mqtt::kMqttReconnectTime = 30;  // 重新连接尝试之间的延迟（秒）
 std::function<void()> Mqtt::connectedcallback = NULL;
 #ifdef USE_ASYNC_MQTT_CLIENT
 std::function<void(char *, uint8_t *, unsigned int)> Mqtt::callback = NULL;
@@ -89,6 +90,7 @@ void Mqtt::perSecondDo()
         bitClear(Config::statusFlag, 1);
         if (lastReconnectAttempt == 0 || millis() - lastReconnectAttempt > kMqttReconnectTime * 1000)
         {
+            disconnectCounter++;
             lastReconnectAttempt = millis();
             if (mqttConnect())
             {

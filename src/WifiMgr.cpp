@@ -5,7 +5,6 @@
 #include "WifiMgr.h"
 #include "Log.h"
 #include "Http.h"
-#include "ETH.h"
 
 #ifdef ESP8266
 WiFiEventHandler WifiMgr::STAGotIP;
@@ -24,6 +23,7 @@ String WifiMgr::_pass = "";
 DNSServer *WifiMgr::dnsServer;
 
 #ifdef ESP32
+#include "ETH.h"
 void WifiMgr::wiFiEvent(WiFiEvent_t event)
 {
     //Log::Info(PSTR("[WiFi-event] event: %d"), event);
