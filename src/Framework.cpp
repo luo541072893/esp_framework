@@ -6,7 +6,9 @@
 
 uint16_t Framework::rebootCount = 0;
 #ifndef DISABLE_MQTT
+#ifndef USE_ASYNC_MQTT_CLIENT
 WiFiClient wifiClient;
+#endif
 void Framework::callback(char *topic, byte *payload, unsigned int length)
 {
     Log::Info(PSTR("Subscribe: %s payload: %.*s"), topic, length, payload);
@@ -129,8 +131,10 @@ void Framework::setup()
     else
     {
 #ifndef DISABLE_MQTT
+#ifndef USE_ASYNC_MQTT_CLIENT
         wifiClient.setTimeout(200);
         Mqtt::setClient(wifiClient);
+#endif
         Mqtt::mqttSetConnectedCallback(connectedCallback);
         Mqtt::mqttSetLoopCallback(callback);
 #endif

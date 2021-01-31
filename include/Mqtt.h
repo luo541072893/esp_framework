@@ -44,7 +44,9 @@ public:
     static String getStatTopic(String topic);
     static String getTeleTopic(String topic);
 
+#ifndef USE_ASYNC_MQTT_CLIENT
     static PubSubClient &setClient(Client &client);
+#endif
 
     static bool publish(String topic, const char *payload, bool retained = false) { return publish(topic.c_str(), payload, retained); };
     static bool publish(const char *topic, const char *payload, bool retained = false);
