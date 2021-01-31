@@ -102,6 +102,9 @@ void WifiMgr::setupWifi()
 #ifdef WIFI_CONNECT_TIMEOUT
         connectStart = 0;
 #endif
+        if (!WiFi.localIP().isSet()) {
+            ESP_Restart();
+        }
         bitSet(Config::statusFlag, 0);
         Log::Info(PSTR("WiFi1 connected. SSID: %s IP address: %s"), WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
         if (globalConfig.wifi.is_static && String(globalConfig.wifi.ip).equals(WiFi.localIP().toString()))
