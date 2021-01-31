@@ -34,6 +34,7 @@ bool Mqtt::mqttConnect()
 
     Log::Info(PSTR("mqtt connect to %s:%d Broker"), globalConfig.mqtt.server, globalConfig.mqtt.port);
 #ifdef USE_ASYNC_MQTT_CLIENT
+    mqttClient.disconnect(true);
     mqttClient.setClientId(UID);
     mqttClient.setServer(globalConfig.mqtt.server, globalConfig.mqtt.port);
     mqttClient.setCredentials(globalConfig.mqtt.user, globalConfig.mqtt.pass);
