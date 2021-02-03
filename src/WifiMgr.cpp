@@ -143,6 +143,9 @@ void WifiMgr::setupWifi()
 
 void WifiMgr::setupWifiManager(bool resetSettings)
 {
+    if (bitRead(Config::statusFlag, 2)){
+        return;
+    }
     if (resetSettings)
     {
         Log::Info(PSTR("WifiManager ResetSettings"));
@@ -256,6 +259,11 @@ void WifiMgr::loop()
     else if (configPortalStart == 1)
     {
         ESP_Restart();
+        return;
+    }
+    if (bitRead(Config::statusFlag, 2)){
+        WiFi.mode(WIFI_AP_STA);
+        configPortalStart = 0;
         return;
     }
     dnsServer->processNextRequest();
