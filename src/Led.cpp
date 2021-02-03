@@ -1,6 +1,5 @@
 #include "Led.h"
 #include "Module.h"
-#include "ETH.h"
 
 Ticker *Led::ledTicker;
 Ticker *Led::ledTicker2;

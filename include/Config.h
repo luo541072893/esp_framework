@@ -39,6 +39,7 @@ enum ModuleFunctions
     FUNC_EVERY_SECOND,
     FUNC_COMMAND,
     FUNC_SAVE_BEFORE_RESTART,
+    FUNC_WEB,
 };
 
 extern char UID[16];

@@ -83,8 +83,8 @@ void Log::Syslog()
 
 void Log::Record(uint8_t loglevel)
 {
-    char mxtime[10]; // "13:45:21 "
-    snprintf_P(mxtime, sizeof(mxtime), PSTR("%02d:%02d:%02d "), Rtc::rtcTime.hour, Rtc::rtcTime.minute, Rtc::rtcTime.second);
+    char mxtime[13]; // "01 13:45:21 "
+    snprintf_P(mxtime, sizeof(mxtime), PSTR("%02d %02d:%02d:%02d "), Rtc::rtcTime.day_of_month, Rtc::rtcTime.hour, Rtc::rtcTime.minute, Rtc::rtcTime.second);
 
     if ((1 & globalConfig.debug.type) == 1)
     {
@@ -105,7 +105,7 @@ void Log::Record(uint8_t loglevel)
         if (!webLogIndex)
             webLogIndex++;                                           // Index 0 is not allowed as it is the end of char string
         while (webLogIndex == webLog[0] ||                           // If log already holds the next index, remove it
-               strlen(webLog) + strlen(tmpData) + 13 > WEB_LOG_SIZE) // 13 = web_log_index + mxtime + '\1' + '\0'
+               strlen(webLog) + strlen(tmpData) + 16 > WEB_LOG_SIZE) // 13 = web_log_index + mxtime + '\1' + '\0'
         {
             char *it = webLog;
             it++;                                              // Skip web_log_index
