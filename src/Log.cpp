@@ -100,7 +100,7 @@ void Log::Record(uint8_t loglevel)
     //{
     // Delimited, zero-terminated buffer of log lines.
     // Each entry has this format: [index][log data]['\1']
-    if ((4 & globalConfig.debug.type) == 4 || loglevel == LOG_LEVEL_ERROR)
+    if (((4 & globalConfig.debug.type) == 4 || loglevel == LOG_LEVEL_ERROR) && loglevel != LOG_LEVEL_DEBUG)
     {
         if (!webLogIndex)
             webLogIndex++;                                           // Index 0 is not allowed as it is the end of char string
