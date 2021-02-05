@@ -20,11 +20,19 @@
 #define GLOBAL_CFG_VERSION 1 // 1 - 999
 #endif
 
+#ifdef ESP8266
+#define LOG_SIZE 512
+#define WEB_LOG_SIZE 4096  // Max number of characters in weblog
+#else
+#define LOG_SIZE 1024
+#define WEB_LOG_SIZE 8192  // Max number of characters in weblog
+#endif
+
 #define MQTT_FULLTOPIC "%module%/%hostname%/%prefix%/" // MQTT 主题格式
 
 #define OTA_URL "http://10.0.0.50/esp/%module%.bin"
 
-#define WEB_LOG_SIZE 4000  // Max number of characters in weblog
+
 #define BOOT_LOOP_OFFSET 5 // 开始恢复默认值之前的引导循环数 (0 = disable, 1..200 = 循环次数)
 
 enum ModuleFunctions
@@ -43,7 +51,7 @@ enum ModuleFunctions
 };
 
 extern char UID[16];
-extern char tmpData[512];
+extern char tmpData[LOG_SIZE];
 extern GlobalConfigMessage globalConfig;
 extern uint32_t perSecond;
 extern Ticker *tickerPerSecond;

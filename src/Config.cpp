@@ -3,7 +3,7 @@
 
 Module *module;
 char UID[16];
-char tmpData[512] = {0};
+char tmpData[LOG_SIZE] = {0};
 uint32_t perSecond;
 Ticker *tickerPerSecond;
 GlobalConfigMessage globalConfig;
