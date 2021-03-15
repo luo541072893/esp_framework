@@ -79,10 +79,14 @@ void Mqtt::availability()
     publish(getTeleTopic(F("availability")), "online", true);
 }
 
-void Mqtt::perSecondDo()
+void Mqtt::perSecondDo(void *parameter)
 {
     if (!WiFi.isConnected() || globalConfig.mqtt.port == 0)
     {
+        bitClear(Mqtt::operationFlag, 0);
+#ifdef ESP32
+        vTaskDelete(NULL);
+#endif
         return;
     }
 
@@ -96,6 +100,10 @@ void Mqtt::perSecondDo()
             if (mqttConnect())
             {
                 lastReconnectAttempt = 0;
+            }
+            else
+            {
+                lastReconnectAttempt = millis();
             }
         }
     }
@@ -111,6 +119,10 @@ void Mqtt::perSecondDo()
             availability();
         }
     }
+    bitClear(Mqtt::operationFlag, 0);
+#ifdef ESP32
+    vTaskDelete(NULL);
+#endif
 }
 
 void Mqtt::loop()
@@ -136,7 +148,16 @@ bool Mqtt::callModule(uint8_t function)
     switch (function)
     {
     case FUNC_EVERY_SECOND:
-        perSecondDo();
+        if (bitRead(Mqtt::operationFlag, 0))
+        {
+            return false;
+        }
+        bitSet(Mqtt::operationFlag, 0);
+#ifdef ESP32
+        xTaskCreate(perSecondDo, "perSecondDo", 10000, NULL, 0, NULL);
+#else
+        perSecondDo(NULL);
+#endif
         break;
     case FUNC_LOOP:
         loop();
@@ -198,6 +219,10 @@ PubSubClient &Mqtt::setClient(Client &client)
 
 bool Mqtt::publish(const char *topic, const char *payload, bool retained)
 {
+    if (!bitRead(Config::statusFlag, 1))
+    {
+        return false;
+    }
 #ifdef USE_ASYNC_MQTT_CLIENT
     return mqttClient.publish(topic, 0, retained, payload);
 #else
@@ -207,6 +232,10 @@ bool Mqtt::publish(const char *topic, const char *payload, bool retained)
 
 bool Mqtt::publish(const char *topic, const uint8_t *payload, unsigned int plength, bool retained)
 {
+    if (!bitRead(Config::statusFlag, 1))
+    {
+        return false;
+    }
 #ifdef USE_ASYNC_MQTT_CLIENT
     return mqttClient.publish(topic, 0, retained, (const char *)payload, plength);
 #else
@@ -216,10 +245,18 @@ bool Mqtt::publish(const char *topic, const uint8_t *payload, unsigned int pleng
 
 bool Mqtt::subscribe(const char *topic, uint8_t qos)
 {
+    if (!bitRead(Config::statusFlag, 1))
+    {
+        return false;
+    }
     return mqttClient.subscribe(topic, qos);
 }
 bool Mqtt::unsubscribe(const char *topic)
 {
+    if (!bitRead(Config::statusFlag, 1))
+    {
+        return false;
+    }
     return mqttClient.unsubscribe(topic);
 }
 

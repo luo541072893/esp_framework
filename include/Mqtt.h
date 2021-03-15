@@ -57,7 +57,7 @@ public:
     static bool unsubscribe(const char *topic);
     static bool unsubscribe(String topic) { return unsubscribe(topic.c_str()); };
 
-    static void perSecondDo();
+    static void perSecondDo(void *parameter);
     static void loop();
     static bool callModule(uint8_t function);
 };
