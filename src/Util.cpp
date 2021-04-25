@@ -139,3 +139,15 @@ bool Util::timeReachedUsec(uint32_t timer)
     const long passed = timePassedSinceUsec(timer);
     return (passed >= 0);
 }
+
+int Util::split(char *str, const char *delim, char dst[][80])
+{
+    char *s = strdup(str);
+    char *token;
+    int n = 0;
+    for (token = strsep(&s, delim); token != NULL; token = strsep(&s, delim))
+    {
+        strcpy(dst[n++], token);
+    }
+    return n;
+}

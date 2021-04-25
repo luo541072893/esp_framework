@@ -4,6 +4,7 @@
 Module *module;
 char UID[16];
 char tmpData[LOG_SIZE] = {0};
+char mqttData[700] = {0};
 uint32_t perSecond;
 Ticker *tickerPerSecond;
 GlobalConfigMessage globalConfig;
@@ -13,7 +14,7 @@ uint8_t module_func_present = 0;
 uint16_t Config::nowCrc;
 uint8_t Config::countdown = 60;
 bool Config::isDelay = false;
-uint8_t Config::operationFlag = 0; // 0每秒
+uint8_t Config::operationFlag = 0; // 0每秒 1保存重启
 uint8_t Config::statusFlag = 0;
 
 const uint16_t crcTalbe[] = {

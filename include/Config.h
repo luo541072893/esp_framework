@@ -10,6 +10,7 @@
 #include <pb.h>
 #include "Arduino.h"
 #include "Common.h"
+#include "FileSystem.h"
 #include "GlobalConfig.pb.h"
 
 #if PB_PROTO_HEADER_VERSION != 30
@@ -47,11 +48,16 @@ enum ModuleFunctions
     FUNC_EVERY_SECOND,
     FUNC_COMMAND,
     FUNC_SAVE_BEFORE_RESTART,
+    FUNC_MQTT_CONNECTED,
+    FUNC_MQTT_DATA,
     FUNC_WEB,
+    FUNC_WEB_ADD_TAB_BUTTON,
+    FUNC_WEB_ADD_TAB,
 };
 
 extern char UID[16];
 extern char tmpData[LOG_SIZE];
+extern char mqttData[700];
 extern GlobalConfigMessage globalConfig;
 extern uint32_t perSecond;
 extern Ticker *tickerPerSecond;
@@ -68,7 +74,7 @@ private:
     static uint8_t countdown;
 
 public:
-    static uint8_t operationFlag; // 0每秒
+    static uint8_t operationFlag; // 0每秒 1保存重启
     static uint8_t statusFlag;    // 0：wifi状态 1：MQTT状态 2：Lan状态
     static uint16_t crc16(uint8_t *ptr, uint16_t len);
 

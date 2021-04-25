@@ -39,8 +39,11 @@ void Http::handleRoot()
 #ifndef DISABLE_MQTT
              "<button id='tb6' onclick='tab(6)'>MQTT</button>"
 #endif
-             "<button id='tb3' onclick='tab(3)'>控制</button>"
-             "<button id='tb4' onclick='tab(4)'>关于</button>"
+             "<button id='tb3' onclick='tab(3)'>控制</button>"));
+
+    ::callModule(FUNC_WEB_ADD_TAB_BUTTON);
+    server->sendContent_P(
+        PSTR("<button id='tb4' onclick='tab(4)'>关于</button>"
 #ifdef WEB_LOG_SIZE
              "<button id='tb5' onclick='tab(5)'>日志</button>"
 #endif
@@ -236,6 +239,8 @@ void Http::handleRoot()
              "</div>"
              "</div>"));
     // TAB 3 End
+
+    ::callModule(FUNC_WEB_ADD_TAB);
 
     // TAB 4 Start
     server->sendContent_P(

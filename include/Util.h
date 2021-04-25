@@ -20,5 +20,6 @@ public:
     static void setNextTimeInterval(uint32_t &timer, const uint32_t step);
     static int32_t timePassedSinceUsec(uint32_t timestamp);
     static bool timeReachedUsec(uint32_t timer);
+    static int split(char *str, const char *delim, char dst[][80]);
 };
 #endif

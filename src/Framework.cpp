@@ -42,6 +42,8 @@ void Framework::connectedCallback()
 {
     Mqtt::subscribe(Mqtt::getCmndTopic(F("#")));
     Led::blinkLED(40, 8);
+
+    callModule(FUNC_MQTT_CONNECTED);
     if (module)
     {
         module->mqttConnected();
@@ -73,7 +75,7 @@ void Framework::one(unsigned long baud)
     rebootCount = Rtc::rtcReboot.fast_reboot_count > BOOT_LOOP_OFFSET ? Rtc::rtcReboot.fast_reboot_count - BOOT_LOOP_OFFSET : 0;
 
     Serial.begin(baud);
-    globalConfig.debug.type = 1;
+    globalConfig.debug.type = 5;
 
     addModule(WifiMgr::callModule);
     addModule(Http::callModule);
@@ -94,11 +96,17 @@ void Framework::setup()
     Log::Error(PSTR("---------------------  v%s  %s  %d-------------------"), module->getModuleVersion().c_str(), Rtc::GetBuildDateAndTime().c_str(), rebootCount);
     if (rebootCount == 1)
     {
+#ifdef USE_UFILESYS
+        FileSystem::init();
+#endif
         Config::readConfig();
         module->resetConfig();
     }
     else if (rebootCount == 2)
     {
+#ifdef USE_UFILESYS
+        FileSystem::init();
+#endif
         Config::readConfig();
         module->resetConfig();
     }
@@ -108,6 +116,9 @@ void Framework::setup()
     }
     else
     {
+#ifdef USE_UFILESYS
+        FileSystem::init();
+#endif
         Config::readConfig();
     }
     if (globalConfig.uid[0] != '\0')
