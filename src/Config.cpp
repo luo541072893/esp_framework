@@ -109,7 +109,7 @@ void Config::resetConfig()
     }
 }
 
-bool Config::doConfig(uint8_t *buf, uint8_t *data, uint16_t len)
+bool Config::doConfig(uint8_t *buf, uint8_t *data, uint16_t len, const char *name)
 {
     bool status = false;
     if (len > 0 && (buf[0] << 8 | buf[1]) == GLOBAL_CFG_VERSION)
@@ -121,7 +121,7 @@ bool Config::doConfig(uint8_t *buf, uint8_t *data, uint16_t len)
         {
             len = GlobalConfigMessage_size;
         }
-        //Log::Info(PSTR("readConfig . . . Len: %d Crc: %d"), len, nowCrc);
+        //Log::Info(PSTR("readConfig . . . %s Len: %d Crc: %d"), name, len, nowCrc);
 
         uint16_t crc = crc16(data, len);
         if (crc == nowCrc)
@@ -136,14 +136,14 @@ bool Config::doConfig(uint8_t *buf, uint8_t *data, uint16_t len)
         }
         else
         {
-            Log::Error(PSTR("readConfig . . . Error Crc: %d Crc: %d"), crc, nowCrc);
+            Log::Error(PSTR("readConfig . . . %s Error Crc: %d Crc: %d"), name, crc, nowCrc);
         }
     }
 
     if (!status)
     {
         globalConfig.debug.type = 1;
-        Log::Error(PSTR("readConfig . . . Error"));
+        Log::Error(PSTR("readConfig . . . %s Error"), name);
         resetConfig();
     }
     else
@@ -152,7 +152,7 @@ bool Config::doConfig(uint8_t *buf, uint8_t *data, uint16_t len)
         {
             module->readConfig();
         }
-        Log::Info(PSTR("readConfig       . . . OK Len: %d"), len);
+        Log::Info(PSTR("readConfig . . . %s OK Len: %d"), name, len);
         return true;
     }
     return false;
@@ -180,7 +180,7 @@ bool Config::readFSConfig()
         uint8_t data[len] = {0};
         file.read(data, len);
         file.close();
-        return doConfig(buf, data, len);
+        return doConfig(buf, data, len, PSTR("FS"));
     }
     else
     {
@@ -219,16 +219,16 @@ void Config::readConfig()
         if (espconfig_spiflash_read(EEPROM_PHYS_ADDR + 6, (uint32_t *)data, len))
 #endif
         {
-            doConfig(buf, data, len);
+            doConfig(buf, data, len, PSTR("EEPROM"));
         }
         else
         {
-            doConfig(buf, nullptr, 0);
+            doConfig(buf, nullptr, 0, PSTR("Default"));
         }
     }
     else
     {
-        doConfig(buf, nullptr, 0);
+        doConfig(buf, nullptr, 0, PSTR("Default"));
     }
 }
 

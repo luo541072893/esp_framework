@@ -72,7 +72,7 @@ private:
     static uint16_t nowCrc;
     static bool isDelay;
     static uint8_t countdown;
-    static bool doConfig(uint8_t *buf, uint8_t *data, uint16_t len);
+    static bool doConfig(uint8_t *buf, uint8_t *data, uint16_t len, const char* name);
 #ifdef USE_UFILESYS
     static bool readFSConfig();
 #endif

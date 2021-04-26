@@ -104,7 +104,7 @@ bool FileSystem::exists(const char *fname)
     bool yes = fs->exists(fname);
     if (!yes)
     {
-        Log::Debug(PSTR("TFS: File '%s' not found"), fname + 1); // Skip leading slash
+        Log::Info(PSTR("TFS: File '%s' not found"), fname + 1); // Skip leading slash
     }
     return yes;
 }
