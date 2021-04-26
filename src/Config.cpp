@@ -109,21 +109,10 @@ void Config::resetConfig()
     }
 }
 
-void Config::readConfig()
+bool Config::doConfig(uint8_t *buf, uint8_t *data, uint16_t len)
 {
-    uint8_t buf[6] = {0};
-#ifdef ESP8266
-    if (spi_flash_read(EEPROM_PHYS_ADDR, (uint32 *)buf, 6) != SPI_FLASH_RESULT_OK)
-#else
-    if (!espconfig_spiflash_read(EEPROM_PHYS_ADDR, (uint32_t *)buf, 6))
-#endif
-    {
-    }
-
-    uint16_t len;
     bool status = false;
-    uint16_t cfg = (buf[0] << 8 | buf[1]);
-    if (cfg == GLOBAL_CFG_VERSION)
+    if (len > 0 && (buf[0] << 8 | buf[1]) == GLOBAL_CFG_VERSION)
     {
         len = (buf[2] << 8 | buf[3]);
         nowCrc = (buf[4] << 8 | buf[5]);
@@ -134,30 +123,21 @@ void Config::readConfig()
         }
         //Log::Info(PSTR("readConfig . . . Len: %d Crc: %d"), len, nowCrc);
 
-        uint8_t *data = (uint8_t *)malloc(len);
-#ifdef ESP8266
-        if (spi_flash_read(EEPROM_PHYS_ADDR + 6, (uint32 *)data, len) == SPI_FLASH_RESULT_OK)
-#else
-        if (espconfig_spiflash_read(EEPROM_PHYS_ADDR + 6, (uint32_t *)data, len))
-#endif
+        uint16_t crc = crc16(data, len);
+        if (crc == nowCrc)
         {
-            uint16_t crc = crc16(data, len);
-            if (crc == nowCrc)
+            memset(&globalConfig, 0, sizeof(GlobalConfigMessage));
+            pb_istream_t stream = pb_istream_from_buffer(data, len);
+            status = pb_decode(&stream, GlobalConfigMessage_fields, &globalConfig);
+            if (globalConfig.http.port == 0)
             {
-                memset(&globalConfig, 0, sizeof(GlobalConfigMessage));
-                pb_istream_t stream = pb_istream_from_buffer(data, len);
-                status = pb_decode(&stream, GlobalConfigMessage_fields, &globalConfig);
-                if (globalConfig.http.port == 0)
-                {
-                    globalConfig.http.port = 80;
-                }
-            }
-            else
-            {
-                Log::Error(PSTR("readConfig . . . Error Crc: %d Crc: %d"), crc, nowCrc);
+                globalConfig.http.port = 80;
             }
         }
-        free(data);
+        else
+        {
+            Log::Error(PSTR("readConfig . . . Error Crc: %d Crc: %d"), crc, nowCrc);
+        }
     }
 
     if (!status)
@@ -173,6 +153,82 @@ void Config::readConfig()
             module->readConfig();
         }
         Log::Info(PSTR("readConfig       . . . OK Len: %d"), len);
+        return true;
+    }
+    return false;
+}
+
+#ifdef USE_UFILESYS
+bool Config::readFSConfig()
+{
+    if (!FileSystem::getFs() || !FileSystem::exists("/config"))
+    {
+        return false;
+    }
+
+    File file = FileSystem::getFs()->open("/config", "r");
+    if (!file)
+    {
+        return false;
+    }
+    uint8_t buf[6] = {0};
+    file.read(buf, 6);
+
+    if ((buf[0] << 8 | buf[1]) == GLOBAL_CFG_VERSION)
+    {
+        uint16_t len = (buf[2] << 8 | buf[3]);
+        uint8_t data[len] = {0};
+        file.read(data, len);
+        file.close();
+        return doConfig(buf, data, len);
+    }
+    else
+    {
+        file.close();
+        return false;
+    }
+    return true;
+}
+#endif
+
+void Config::readConfig()
+{
+#ifdef USE_UFILESYS
+    if (readFSConfig())
+    {
+        return;
+    }
+#endif
+
+    uint8_t buf[6] = {0};
+#ifdef ESP8266
+    if (spi_flash_read(EEPROM_PHYS_ADDR, (uint32 *)buf, 6) != SPI_FLASH_RESULT_OK)
+#else
+    if (!espconfig_spiflash_read(EEPROM_PHYS_ADDR, (uint32_t *)buf, 6))
+#endif
+    {
+    }
+
+    if ((buf[0] << 8 | buf[1]) == GLOBAL_CFG_VERSION)
+    {
+        uint16_t len = (buf[2] << 8 | buf[3]);
+        uint8_t data[len] = {0};
+#ifdef ESP8266
+        if (spi_flash_read(EEPROM_PHYS_ADDR + 6, (uint32 *)data, len) == SPI_FLASH_RESULT_OK)
+#else
+        if (espconfig_spiflash_read(EEPROM_PHYS_ADDR + 6, (uint32_t *)data, len))
+#endif
+        {
+            doConfig(buf, data, len);
+        }
+        else
+        {
+            doConfig(buf, nullptr, 0);
+        }
+    }
+    else
+    {
+        doConfig(buf, nullptr, 0);
     }
 }
 
@@ -183,8 +239,8 @@ bool Config::saveConfig(bool isEverySecond)
     {
         module->saveConfig(isEverySecond);
     }
-    uint8_t buffer[GlobalConfigMessage_size];
-    pb_ostream_t stream = pb_ostream_from_buffer(buffer, sizeof(buffer));
+    uint8_t buffer[GlobalConfigMessage_size + 6];
+    pb_ostream_t stream = pb_ostream_from_buffer(buffer + 6, sizeof(buffer));
     bool status = pb_encode(&stream, GlobalConfigMessage_fields, &globalConfig);
     size_t len = stream.bytes_written;
     if (!status)
@@ -194,10 +250,10 @@ bool Config::saveConfig(bool isEverySecond)
     }
     else
     {
-        uint16_t crc = crc16(buffer, len);
+        uint16_t crc = crc16(buffer + 6, len);
         if (crc == nowCrc)
         {
-            // Log::Info(PSTR("Check Config CRC . . . Same"));
+            //Log::Info(PSTR("Check Config CRC . . . Same"));
             return true;
         }
         else
@@ -206,30 +262,40 @@ bool Config::saveConfig(bool isEverySecond)
         }
     }
 
+    // 拷贝数据
+    buffer[0] = GLOBAL_CFG_VERSION >> 8;
+    buffer[1] = GLOBAL_CFG_VERSION;
+
+    buffer[2] = len >> 8;
+    buffer[3] = len;
+
+    buffer[4] = nowCrc >> 8;
+    buffer[5] = nowCrc;
+
+#ifdef USE_UFILESYS
+    if (FileSystem::save("/config", buffer, len + 6))
+    {
+        Log::Info(PSTR("saveConfig . . . FS OK Len: %d Crc: %d"), len, nowCrc);
+    }
+    else
+    {
+        Log::Info(PSTR("saveConfig . . . FS Error"));
+    }
+#endif
+
     // 读取原来数据
-    uint8_t *data = (uint8_t *)malloc(SPI_FLASH_SEC_SIZE);
+    uint8_t data[SPI_FLASH_SEC_SIZE] = {0};
 #ifdef ESP8266
     if (spi_flash_read(EEPROM_PHYS_ADDR, (uint32 *)data, SPI_FLASH_SEC_SIZE) != SPI_FLASH_RESULT_OK)
 #else
     if (!espconfig_spiflash_read(EEPROM_PHYS_ADDR, (uint32_t *)data, SPI_FLASH_SEC_SIZE))
 #endif
     {
-        free(data);
-        Log::Error(PSTR("saveConfig . . . Read EEPROM Data Error"));
+        Log::Error(PSTR("saveConfig . . . EEPROM Read Data Error"));
         return false;
     }
 
-    // 拷贝数据
-    data[0] = GLOBAL_CFG_VERSION >> 8;
-    data[1] = GLOBAL_CFG_VERSION;
-
-    data[2] = len >> 8;
-    data[3] = len;
-
-    data[4] = nowCrc >> 8;
-    data[5] = nowCrc;
-
-    memcpy(&data[6], buffer, len);
+    memcpy(&data[0], buffer, len + 6);
 
     // 擦写扇区
 #ifdef ESP8266
@@ -238,8 +304,7 @@ bool Config::saveConfig(bool isEverySecond)
     if (!espconfig_spiflash_erase_sector(EEPROM_PHYS_ADDR / SPI_FLASH_SEC_SIZE))
 #endif
     {
-        free(data);
-        Log::Error(PSTR("saveConfig . . . Erase Sector Error"));
+        Log::Error(PSTR("saveConfig . . . EEPROM Erase Sector Error"));
         return false;
     }
 
@@ -250,13 +315,11 @@ bool Config::saveConfig(bool isEverySecond)
     if (!espconfig_spiflash_write(EEPROM_PHYS_ADDR, (uint32_t *)data, SPI_FLASH_SEC_SIZE))
 #endif
     {
-        free(data);
-        Log::Error(PSTR("saveConfig . . . Write EEPROM Data Error"));
+        Log::Error(PSTR("saveConfig . . . EEPROM Write Data Error"));
         return false;
     }
-    free(data);
 
-    Log::Info(PSTR("saveConfig . . . OK Len: %d Crc: %d"), len, nowCrc);
+    Log::Info(PSTR("saveConfig . . . EEPROM OK Len: %d Crc: %d"), len, nowCrc);
     return true;
 }
 

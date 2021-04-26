@@ -2,6 +2,9 @@
 #include "Rtc.h"
 #include "Log.h"
 
+#ifdef ESP32
+RTC_NOINIT_ATTR RtcReboot Rtc::RtcDataReboot;
+#endif
 RtcReboot Rtc::rtcReboot;
 uint32_t Rtc::rtcRebootCrc = 0;
 TIME_T Rtc::rtcTime;
@@ -211,7 +214,8 @@ void Rtc::rtcRebootLoad()
 #ifdef ESP8266
     ESP.rtcUserMemoryRead(100 - sizeof(RtcReboot), (uint32_t *)&rtcReboot, sizeof(RtcReboot)); // 0x280
 #else
-    espconfig_spiflash_read(SPI_FLASH_SEC_SIZE - sizeof(RtcReboot), (uint32_t *)&rtcReboot, sizeof(RtcReboot));
+    //espconfig_spiflash_read(SPI_FLASH_SEC_SIZE - sizeof(RtcReboot), (uint32_t *)&rtcReboot, sizeof(RtcReboot));
+    rtcReboot = RtcDataReboot;
 #endif
     if (rtcReboot.valid != RTC_MEM_VALID)
     {
@@ -231,7 +235,8 @@ void Rtc::rtcRebootSave()
 #ifdef ESP8266
         ESP.rtcUserMemoryWrite(100 - sizeof(RtcReboot), (uint32_t *)&rtcReboot, sizeof(RtcReboot));
 #else
-        espconfig_spiflash_write(SPI_FLASH_SEC_SIZE - sizeof(RtcReboot), (uint32_t *)&rtcReboot, sizeof(RtcReboot));
+        //espconfig_spiflash_write(SPI_FLASH_SEC_SIZE - sizeof(RtcReboot), (uint32_t *)&rtcReboot, sizeof(RtcReboot));
+        RtcDataReboot = rtcReboot;
 #endif
         rtcRebootCrc = getRtcRebootCrc();
     }

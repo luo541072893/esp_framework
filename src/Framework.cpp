@@ -94,19 +94,16 @@ void Framework::one(unsigned long baud)
 void Framework::setup()
 {
     Log::Error(PSTR("---------------------  v%s  %s  %d-------------------"), module->getModuleVersion().c_str(), Rtc::GetBuildDateAndTime().c_str(), rebootCount);
+#ifdef USE_UFILESYS
+    FileSystem::init();
+#endif
     if (rebootCount == 1)
     {
-#ifdef USE_UFILESYS
-        FileSystem::init();
-#endif
         Config::readConfig();
         module->resetConfig();
     }
     else if (rebootCount == 2)
     {
-#ifdef USE_UFILESYS
-        FileSystem::init();
-#endif
         Config::readConfig();
         module->resetConfig();
     }
@@ -116,9 +113,6 @@ void Framework::setup()
     }
     else
     {
-#ifdef USE_UFILESYS
-        FileSystem::init();
-#endif
         Config::readConfig();
     }
     if (globalConfig.uid[0] != '\0')

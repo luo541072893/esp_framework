@@ -72,6 +72,10 @@ private:
     static uint16_t nowCrc;
     static bool isDelay;
     static uint8_t countdown;
+    static bool doConfig(uint8_t *buf, uint8_t *data, uint16_t len);
+#ifdef USE_UFILESYS
+    static bool readFSConfig();
+#endif
 
 public:
     static uint8_t operationFlag; // 0每秒 1保存重启

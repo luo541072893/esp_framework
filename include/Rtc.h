@@ -34,6 +34,9 @@ const uint16_t RTC_MEM_VALID = 0xA55A;
 class Rtc
 {
 protected:
+#ifdef ESP32
+    static RTC_NOINIT_ATTR RtcReboot RtcDataReboot;
+#endif
     static uint32_t rtcRebootCrc;
     static uint8_t operationFlag;
     static void getNtp();
