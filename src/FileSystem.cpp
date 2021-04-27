@@ -17,7 +17,7 @@ void FileSystem::init(void)
     {
         type = 0;
         fs = 0;
-        Log::Error(PSTR("UFS: FlashFS no Support"));
+        Log::Error(PSTR("FS: FlashFS no Support"));
         return;
     }
 #endif // ESP8266
@@ -34,14 +34,14 @@ void FileSystem::init(void)
         {
             type = 0;
             fs = 0;
-            Log::Error(PSTR("UFS: FlashFS no Support"));
+            Log::Error(PSTR("FS: FlashFS no Support"));
             return;
         }
     }
 #endif // ESP32
     if (type)
     {
-        Log::Info(PSTR("UFS: FlashFS mounted with %d kB free, %d kB total"), info(1), info(0));
+        Log::Info(PSTR("FS: FlashFS mounted with %d kB free, %d kB total"), info(1), info(0));
     }
 }
 
@@ -104,7 +104,7 @@ bool FileSystem::exists(const char *fname)
     bool yes = fs->exists(fname);
     if (!yes)
     {
-        Log::Info(PSTR("TFS: File '%s' not found"), fname + 1); // Skip leading slash
+        Log::Info(PSTR("FS: File '%s' not found"), fname + 1); // Skip leading slash
     }
     return yes;
 }
@@ -119,7 +119,7 @@ bool FileSystem::save(const char *fname, const uint8_t *buf, uint32_t len)
     File file = fs->open(fname, "w");
     if (!file)
     {
-        Log::Info(PSTR("TFS: Save failed"));
+        Log::Info(PSTR("FS: Save failed"));
         return false;
     }
 
@@ -138,7 +138,7 @@ bool FileSystem::erase(const char *fname, uint32_t len, uint8_t init_value)
     File file = fs->open(fname, "w");
     if (!file)
     {
-        Log::Info(PSTR("TFS: Erase failed"));
+        Log::Info(PSTR("FS: Erase failed"));
         return false;
     }
 
@@ -164,7 +164,7 @@ bool FileSystem::load(const char *fname, uint8_t *buf, uint32_t len)
     File file = fs->open(fname, "r");
     if (!file)
     {
-        Log::Info(PSTR("TFS: File '%s' not found"), fname + 1); // Skip leading slash
+        Log::Info(PSTR("FS: File '%s' not found"), fname + 1); // Skip leading slash
         return false;
     }
 
@@ -182,7 +182,7 @@ bool FileSystem::del(const char *fname)
 
     if (!fs->remove(fname))
     {
-        Log::Info(PSTR("TFS: Delete failed"));
+        Log::Info(PSTR("FS: Delete failed"));
         return false;
     }
     return true;
@@ -197,7 +197,7 @@ bool FileSystem::reName(const char *fname1, const char *fname2)
 
     if (!fs->rename(fname1, fname2))
     {
-        Log::Info(PSTR("TFS: Rename failed"));
+        Log::Info(PSTR("FS: Rename failed"));
         return false;
     }
     return true;

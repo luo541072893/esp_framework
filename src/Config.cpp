@@ -148,11 +148,11 @@ bool Config::doConfig(uint8_t *buf, uint8_t *data, uint16_t len, const char *nam
     }
     else
     {
+        Log::Info(PSTR("readConfig . . . %s OK Len: %d"), name, len);
         if (module)
         {
             module->readConfig();
         }
-        Log::Info(PSTR("readConfig . . . %s OK Len: %d"), name, len);
         return true;
     }
     return false;
