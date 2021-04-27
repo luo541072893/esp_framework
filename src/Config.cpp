@@ -65,7 +65,6 @@ void Config::resetConfig()
 #endif
 #ifdef WIFI_PASS
     strcpy(globalConfig.wifi.pass, WIFI_PASS);
-
 #endif
 #ifdef MQTT_SERVER
     strcpy(globalConfig.mqtt.server, MQTT_SERVER);
@@ -101,7 +100,8 @@ void Config::resetConfig()
 #ifdef OTA_URL
     strcpy(globalConfig.http.ota_url, OTA_URL);
 #endif
-    globalConfig.debug.type = 1;
+    globalConfig.debug.type = 5;
+    globalConfig.wifi.is_restart = true;
 
     if (module)
     {

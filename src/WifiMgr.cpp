@@ -102,7 +102,8 @@ void WifiMgr::setupWifi()
 #ifdef WIFI_CONNECT_TIMEOUT
         connectStart = 0;
 #endif
-        if (!WiFi.localIP().isSet()) {
+        if (!WiFi.localIP().isSet())
+        {
             ESP_Restart();
         }
         bitSet(Config::statusFlag, 0);
@@ -146,13 +147,14 @@ void WifiMgr::setupWifi()
 
 void WifiMgr::setupWifiManager(bool resetSettings)
 {
-    if (bitRead(Config::statusFlag, 2)){
+    if (bitRead(Config::statusFlag, 2))
+    {
         return;
     }
     if (resetSettings)
     {
-        Log::Info(PSTR("WifiManager ResetSettings"));
-        Config::resetConfig();
+        //Log::Info(PSTR("WifiManager ResetSettings"));
+        //Config::resetConfig();
         WiFi.disconnect(true);
     }
     //WiFi.setAutoConnect(true);
@@ -229,13 +231,11 @@ void WifiMgr::perSecondDo()
                     Log::Info(PSTR("Wifi disconnect"));
                 }
                 disconnectTime++;
-#ifdef WIFI_DISCONNECT_RESTART
-                if (disconnectTime >= 10) // 10分钟未连上wifi则重启
+                if (disconnectTime >= 10 && globalConfig.wifi.is_restart) // 10分钟未连上wifi则重启
                 {
                     Log::Info(PSTR("Wifi reconnect TimeOut"));
                     ESP_Restart();
                 }
-#endif
                 WiFi.begin(globalConfig.wifi.ssid, globalConfig.wifi.pass);
             }
         }
@@ -264,7 +264,8 @@ void WifiMgr::loop()
         ESP_Restart();
         return;
     }
-    if (bitRead(Config::statusFlag, 2)){
+    if (bitRead(Config::statusFlag, 2))
+    {
         WiFi.mode(WIFI_AP_STA);
         configPortalStart = 0;
         return;
@@ -308,7 +309,7 @@ void WifiMgr::loop()
     }
 
     // 检查是否超时
-    if (millis() > configPortalStart + (WIFI_PORTAL_TIMEOUT * 1000))
+    if (globalConfig.wifi.is_restart && millis() > configPortalStart + (WIFI_PORTAL_TIMEOUT * 1000))
     {
         dnsServer->stop();
         configPortalStart = 0;

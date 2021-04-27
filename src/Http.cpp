@@ -92,6 +92,9 @@ void Http::handleRoot()
     server->sendContent_P(
         PSTR("<form method='post' action='/dhcp' onsubmit='postform(this);return false'>"
              "<table class='gridtable'><thead><tr><th colspan='2'>WIFI高级设置</th></tr></thead><tbody>"
+             "<tr><td>高级</td><td>"
+             "<label class='bui-radios-label'><input type='checkbox' name='wifi_dis_restart' value='1'/><i class='bui-radios' style='border-radius:20%'></i> 断开Wifi 10分钟自动重启</label>"
+             "</td></tr>"
              "<tr><td>DHCP</td><td>"
              "<label class='bui-radios-label'><input type='radio' name='dhcp' value='1' onchange='dhcponchange(this)'/><i class='bui-radios'></i> DHCP</label>&nbsp;&nbsp;&nbsp;&nbsp;"
              "<label class='bui-radios-label'><input type='radio' name='dhcp' value='2' onchange='dhcponchange(this)'/><i class='bui-radios'></i> 静态IP</label>"
@@ -313,6 +316,11 @@ void Http::handleRoot()
                WiFi.isConnected() ? PSTR("") : PSTR("scanWifi();"), globalConfig.wifi.is_static ? 2 : 1);
     server->sendContent_P(html);
 
+    if (globalConfig.wifi.is_restart)
+    {
+        server->sendContent_P(PSTR("setRadioValue('wifi_dis_restart', '1');"));
+    }
+
 #ifndef DISABLE_MQTT
     snprintf_P(html, sizeof(html), PSTR("setRadioValue('retain', '%d');"), globalConfig.mqtt.retain ? 1 : 0);
     server->sendContent_P(html);
@@ -479,6 +487,7 @@ void Http::handledhcp()
 
     bool old = globalConfig.wifi.is_static;
     globalConfig.wifi.is_static = server->arg(F("dhcp")).equals(F("2"));
+    globalConfig.wifi.is_restart = server->arg(F("wifi_dis_restart")).equals(F("1"));
     strcpy(globalConfig.wifi.ip, ip.c_str());
     strcpy(globalConfig.wifi.sn, netmask.c_str());
     strcpy(globalConfig.wifi.gw, gateway.c_str());
@@ -486,11 +495,11 @@ void Http::handledhcp()
 
     if (old != globalConfig.wifi.is_static)
     {
-        server->send_P(200, PSTR("text/html"), PSTR("{\"code\":1,\"msg\":\"设置DHCP信息成功，重启后生效\"}"));
+        server->send_P(200, PSTR("text/html"), PSTR("{\"code\":1,\"msg\":\"Wifi高级设置设置成功，重启后生效\"}"));
     }
     else
     {
-        server->send_P(200, PSTR("text/html"), PSTR("{\"code\":1,\"msg\":\"设置DHCP信息成功\"}"));
+        server->send_P(200, PSTR("text/html"), PSTR("{\"code\":1,\"msg\":\"Wifi高级设置设置成功\"}"));
     }
 }
 
