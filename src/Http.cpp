@@ -69,11 +69,18 @@ void Http::handleRoot()
                     "<tr><td>空闲内存</td><td><span id='free_mem'>%d</span> kB</td></tr>"
                     "<tr><td>IP地址</td><td>%s</td></tr>"
                     "<tr><td>DHCP</td><td>%s</td></tr>"
+#ifdef ESP32
                     "<tr><td>CPU温度</td><td>%.2f°C</td></tr>"
+#endif
                     "</tbody></table>"
                     "</div>"),
                WiFi.RSSI(), Rtc::msToHumanString(millis()).c_str(), ESP.getFreeHeap() / 1024,
-               WiFi.localIP().toString().c_str(), (globalConfig.wifi.is_static ? PSTR("静态IP") : PSTR("DHCP")), temperatureRead());
+               WiFi.localIP().toString().c_str(), (globalConfig.wifi.is_static ? PSTR("静态IP") : PSTR("DHCP"))
+#ifdef ESP32
+                                                      ,
+               temperatureRead()
+#endif
+    );
     server->sendContent_P(html);
     // TAB 1 End
 

@@ -177,7 +177,8 @@ bool Config::readFSConfig()
     if ((buf[0] << 8 | buf[1]) == GLOBAL_CFG_VERSION)
     {
         uint16_t len = (buf[2] << 8 | buf[3]);
-        uint8_t data[len] = {0};
+        uint8_t data[len];
+        memset(data, 0, len);
         file.read(data, len);
         file.close();
         return doConfig(buf, data, len, PSTR("FS"));
@@ -212,7 +213,8 @@ void Config::readConfig()
     if ((buf[0] << 8 | buf[1]) == GLOBAL_CFG_VERSION)
     {
         uint16_t len = (buf[2] << 8 | buf[3]);
-        uint8_t data[len] = {0};
+        uint8_t data[len];
+        memset(data, 0, len);
 #ifdef ESP8266
         if (spi_flash_read(EEPROM_PHYS_ADDR + 6, (uint32 *)data, len) == SPI_FLASH_RESULT_OK)
 #else
