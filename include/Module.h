@@ -18,6 +18,7 @@ protected:
     uint16_t configCrc = 0;
 
 public:
+    Module *next = nullptr;
     virtual void init();
     virtual String getModuleName();
     virtual String getModuleCNName();
@@ -38,7 +39,7 @@ public:
     virtual String httpGetStatus(WebServer *server);
 
 #ifndef DISABLE_MQTT
-    virtual void mqttCallback(char *topic, char *payload, char *cmnd);
+    virtual bool mqttCallback(char *topic, char *payload, char *cmnd);
     virtual void mqttConnected();
 #ifndef DISABLE_MQTT_DISCOVERY
     virtual void mqttDiscovery(bool isEnable = true);

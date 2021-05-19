@@ -32,7 +32,12 @@ void Framework::callback(char *topic, byte *payload, unsigned int length)
     }
     else if (module)
     {
-        module->mqttCallback(topic, (char *)payload, cmnd);
+        Module *ptr = module;
+        while (ptr != nullptr)
+        {
+            ptr->mqttCallback(topic, (char *)payload, cmnd);
+            ptr = ptr->next;
+        }
     }
 
     Led::led(200);
@@ -44,9 +49,12 @@ void Framework::connectedCallback()
     Led::blinkLED(40, 8);
 
     callModule(FUNC_MQTT_CONNECTED);
-    if (module)
+
+    Module *ptr = module;
+    while (ptr != nullptr)
     {
-        module->mqttConnected();
+        ptr->mqttConnected();
+        ptr = ptr->next;
     }
 }
 #endif
@@ -143,7 +151,12 @@ void Framework::setup()
         Mqtt::mqttSetConnectedCallback(connectedCallback);
         Mqtt::mqttSetLoopCallback(callback);
 #endif
-        module->init();
+        Module *ptr = module;
+        while (ptr != nullptr)
+        {
+            ptr->init();
+            ptr = ptr->next;
+        }
         Rtc::init();
     }
     Http::init();
@@ -167,9 +180,11 @@ void Framework::loop()
     }
 
     callModule(FUNC_LOOP);
-    if (module)
+    Module *ptr = module;
+    while (ptr != nullptr)
     {
-        module->loop();
+        ptr->loop();
+        ptr = ptr->next;
     }
 
     static uint32_t state_50msecond = 0; // State 50msecond timer
@@ -183,9 +198,11 @@ void Framework::loop()
     {
         bitClear(Config::operationFlag, 0);
         callModule(FUNC_EVERY_SECOND);
-        if (module)
+        Module *ptr = module;
+        while (ptr != nullptr)
         {
-            module->perSecondDo();
+            ptr->perSecondDo();
+            ptr = ptr->next;
         }
     }
     delay(1);

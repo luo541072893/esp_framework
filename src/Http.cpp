@@ -200,9 +200,12 @@ void Http::handleRoot()
     server->sendContent_P(PSTR("<div id='tab3'>"));
 
     ::callModule(FUNC_WEB);
-    if (module)
+
+    Module *ptr = module;
+    while (ptr != nullptr)
     {
-        module->httpHtml(server);
+        ptr->httpHtml(server);
+        ptr = ptr->next;
     }
 
     server->sendContent_P(
@@ -417,10 +420,13 @@ void Http::handleDiscovery()
     globalConfig.mqtt.discovery = !globalConfig.mqtt.discovery;
     Config::saveConfig();
 
-    if (module)
+    Module *ptr = module;
+    while (ptr != nullptr)
     {
-        module->mqttDiscovery(globalConfig.mqtt.discovery);
+        ptr->mqttDiscovery(globalConfig.mqtt.discovery);
+        ptr = ptr->next;
     }
+
     if (globalConfig.mqtt.discovery)
     {
         server->send_P(200, PSTR("text/html"), PSTR("{\"code\":1,\"msg\":\"已经打开MQTT自发现。\",\"data\":{\"discovery\":1}}"));
@@ -718,14 +724,16 @@ void Http::handleGetStatus()
         server->sendContent_P(html);
     }
 
-    if (module)
+    Module *ptr = module;
+    while (ptr != nullptr)
     {
-        String tmp = module->httpGetStatus(server);
+        String tmp = ptr->httpGetStatus(server);
         if (tmp.length() > 0)
         {
             server->sendContent_P(PSTR(","));
             server->sendContent(tmp);
         }
+        ptr = ptr->next;
     }
 
 #ifdef WEB_LOG_SIZE
@@ -983,10 +991,13 @@ void Http::init()
     server->on(F("/update"), HTTP_POST, handleUpdate, handleUpdateUpload);
     server->onNotFound(handleNotFound);
 
-    if (module)
+    Module *ptr = module;
+    while (ptr != nullptr)
     {
-        module->httpAdd(server);
+        ptr->httpAdd(server);
+        ptr = ptr->next;
     }
+
     server->begin();
     Log::Info(PSTR("HTTP server started port: %d"), globalConfig.http.port);
 }
@@ -1095,7 +1106,12 @@ void Http::handleModuleSetting()
 #ifndef DISABLE_MQTT_DISCOVERY
         if (globalConfig.mqtt.discovery && module)
         {
-            module->mqttDiscovery(false);
+            Module *ptr = module;
+            while (ptr != nullptr)
+            {
+                ptr->mqttDiscovery(false);
+                ptr = ptr->next;
+            }
         }
 #endif
 #endif
