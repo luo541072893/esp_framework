@@ -452,52 +452,56 @@ void Http::handledhcp()
     {
         return;
     }
-    String ip = server->arg(F("static_ip"));
-    String netmask = server->arg(F("static_netmask"));
-    String gateway = server->arg(F("static_gateway"));
-    if (!WifiMgr::isIp(ip))
-    {
-        server->send_P(200, PSTR("text/html"), PSTR("{\"code\":0,\"msg\":\"IP地址错误\"}"));
-        return;
-    }
-    if (!WifiMgr::isIp(netmask))
-    {
-        server->send_P(200, PSTR("text/html"), PSTR("{\"code\":0,\"msg\":\"掩码地址错误\"}"));
-        return;
-    }
-    if (!WifiMgr::isIp(gateway))
-    {
-        server->send_P(200, PSTR("text/html"), PSTR("{\"code\":0,\"msg\":\"网关地址错误\"}"));
-        return;
-    }
-
-    IPAddress static_ip;
-    IPAddress static_sn;
-    IPAddress static_gw;
-    static_ip.fromString(ip);
-    static_sn.fromString(netmask);
-    static_gw.fromString(gateway);
-
-#ifdef ESP8266
-    if (!(static_ip.isV4() && static_sn.isV4() && (!static_gw.isSet() || static_gw.isV4())))
-    {
-        server->send_P(200, PSTR("text/html"), PSTR("{\"code\":0,\"msg\":\"IP地址或者网关错误\"}"));
-        return;
-    }
-
-    if ((static_ip.v4() & static_sn.v4()) != (static_gw.v4() & static_sn.v4()))
-    {
-        server->send_P(200, PSTR("text/html"), PSTR("{\"code\":0,\"msg\":\"网段错误\"}"));
-        return;
-    }
-#endif
-
     bool old = globalConfig.wifi.is_static;
     globalConfig.wifi.is_static = server->arg(F("dhcp")).equals(F("2"));
+
+    if (globalConfig.wifi.is_static)
+    {
+        String ip = server->arg(F("static_ip"));
+        String netmask = server->arg(F("static_netmask"));
+        String gateway = server->arg(F("static_gateway"));
+        if (!WifiMgr::isIp(ip))
+        {
+            server->send_P(200, PSTR("text/html"), PSTR("{\"code\":0,\"msg\":\"IP地址错误\"}"));
+            return;
+        }
+        if (!WifiMgr::isIp(netmask))
+        {
+            server->send_P(200, PSTR("text/html"), PSTR("{\"code\":0,\"msg\":\"掩码地址错误\"}"));
+            return;
+        }
+        if (!WifiMgr::isIp(gateway))
+        {
+            server->send_P(200, PSTR("text/html"), PSTR("{\"code\":0,\"msg\":\"网关地址错误\"}"));
+            return;
+        }
+
+        IPAddress static_ip;
+        IPAddress static_sn;
+        IPAddress static_gw;
+        static_ip.fromString(ip);
+        static_sn.fromString(netmask);
+        static_gw.fromString(gateway);
+
+#ifdef ESP8266
+        if (!(static_ip.isV4() && static_sn.isV4() && (!static_gw.isSet() || static_gw.isV4())))
+        {
+            server->send_P(200, PSTR("text/html"), PSTR("{\"code\":0,\"msg\":\"IP地址或者网关错误\"}"));
+            return;
+        }
+
+        if ((static_ip.v4() & static_sn.v4()) != (static_gw.v4() & static_sn.v4()))
+        {
+            server->send_P(200, PSTR("text/html"), PSTR("{\"code\":0,\"msg\":\"网段错误\"}"));
+            return;
+        }
+#endif
+        strcpy(globalConfig.wifi.ip, ip.c_str());
+        strcpy(globalConfig.wifi.sn, netmask.c_str());
+        strcpy(globalConfig.wifi.gw, gateway.c_str());
+    }
+
     globalConfig.wifi.is_restart = server->arg(F("wifi_dis_restart")).equals(F("1"));
-    strcpy(globalConfig.wifi.ip, ip.c_str());
-    strcpy(globalConfig.wifi.sn, netmask.c_str());
-    strcpy(globalConfig.wifi.gw, gateway.c_str());
     Config::saveConfig();
 
     if (old != globalConfig.wifi.is_static)
