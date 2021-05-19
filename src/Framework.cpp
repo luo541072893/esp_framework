@@ -105,15 +105,15 @@ void Framework::setup()
 #ifdef USE_UFILESYS
     FileSystem::init();
 #endif
-    if (rebootCount == 1)
+    if (rebootCount == 1 || rebootCount == 2)
     {
         Config::readConfig();
-        module->resetConfig();
-    }
-    else if (rebootCount == 2)
-    {
-        Config::readConfig();
-        module->resetConfig();
+        Module *ptr = module;
+        while (ptr != nullptr)
+        {
+            ptr->resetConfig();
+            ptr = ptr->next;
+        }
     }
     else if (rebootCount == 3)
     {
@@ -171,7 +171,6 @@ void Framework::setup()
 
 void Framework::loop()
 {
-    uint32_t my_sleep = millis();
     if (rebootCount >= 3)
     {
         WifiMgr::loop();

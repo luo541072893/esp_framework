@@ -103,9 +103,11 @@ void Config::resetConfig()
     globalConfig.debug.type = 5;
     globalConfig.wifi.is_restart = true;
 
-    if (module)
+    Module *ptr = module;
+    while (ptr != nullptr)
     {
-        module->resetConfig();
+        ptr->resetConfig();
+        ptr = ptr->next;
     }
 }
 
@@ -158,9 +160,11 @@ bool Config::doConfig(uint8_t *buf, uint8_t *data, uint16_t len, const char *nam
     else
     {
         Log::Info(PSTR("readConfig . . . %s OK Len: %d"), name, len);
-        if (module)
+        Module *ptr = module;
+        while (ptr != nullptr)
         {
-            module->readConfig();
+            ptr->readConfig();
+            ptr = ptr->next;
         }
         return true;
     }
@@ -246,10 +250,13 @@ void Config::readConfig()
 bool Config::saveConfig(bool isEverySecond)
 {
     countdown = 60;
-    if (module)
+    Module *ptr = module;
+    while (ptr != nullptr)
     {
-        module->saveConfig(isEverySecond);
+        ptr->saveConfig(isEverySecond);
+        ptr = ptr->next;
     }
+
     uint8_t buffer[GlobalConfigMessage_size + 6];
     pb_ostream_t stream = pb_ostream_from_buffer(buffer + 6, sizeof(buffer));
     bool status = pb_encode(&stream, GlobalConfigMessage_fields, &globalConfig);
@@ -429,7 +436,7 @@ bool Config::FSReadConfig(const char *fileName, uint16_t version, uint16_t size,
     }
     if (!FileSystem::exists(fileName))
     {
-        Log::Error(PSTR("ReadConfig [%s] . . . File No Exists"), fileName + 1);
+        Log::Error(PSTR("ReadConfig [%s] . . . Not Found"), fileName + 1);
         return false;
     }
 

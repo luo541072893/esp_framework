@@ -41,6 +41,18 @@ void Http::handleRoot()
 #endif
              "<button id='tb3' onclick='tab(3)'>控制</button>"));
 
+    Module *ptr = module;
+    uint8_t ci = 11;
+    while (ptr != nullptr)
+    {
+        if (ptr != module)
+        {
+            snprintf_P(html, sizeof(html), PSTR("<button id='tb%d' onclick='tab(%d)'>控制%d</button>"), ++ci, ci, ci - 11);
+            server->sendContent_P(html);
+        }
+        ptr = ptr->next;
+    }
+
     ::callModule(FUNC_WEB_ADD_TAB_BUTTON);
     server->sendContent_P(
         PSTR("<button id='tb4' onclick='tab(4)'>关于</button>"
@@ -201,8 +213,8 @@ void Http::handleRoot()
 
     ::callModule(FUNC_WEB);
 
-    Module *ptr = module;
-    while (ptr != nullptr)
+    ptr = module;
+    if (ptr != nullptr)
     {
         ptr->httpHtml(server);
         ptr = ptr->next;
@@ -253,6 +265,16 @@ void Http::handleRoot()
              "</div>"
              "</div>"));
     // TAB 3 End
+
+    ci = 11;
+    while (ptr != nullptr)
+    {
+        snprintf_P(html, sizeof(html), PSTR("<div id='tab%d'>"), ++ci);
+        server->sendContent_P(html);
+        ptr->httpHtml(server);
+        server->sendContent_P(PSTR("</div>"));
+        ptr = ptr->next;
+    }
 
     ::callModule(FUNC_WEB_ADD_TAB);
 
