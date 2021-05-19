@@ -133,6 +133,15 @@ bool Config::doConfig(uint8_t *buf, uint8_t *data, uint16_t len, const char *nam
             {
                 globalConfig.http.port = 80;
             }
+            if (globalConfig.wifi.ssid[0] == '\0')
+            {
+#ifdef WIFI_SSID
+                strcpy(globalConfig.wifi.ssid, WIFI_SSID);
+#endif
+#ifdef WIFI_PASS
+                strcpy(globalConfig.wifi.pass, WIFI_PASS);
+#endif
+            }
         }
         else
         {
@@ -286,13 +295,15 @@ bool Config::saveConfig(bool isEverySecond)
 #endif
 
     // 读取原来数据
-    uint8_t data[SPI_FLASH_SEC_SIZE] = {0};
+    //uint8_t data[SPI_FLASH_SEC_SIZE] = {0};
+    uint8_t *data = (uint8_t *)malloc(SPI_FLASH_SEC_SIZE);
 #ifdef ESP8266
     if (spi_flash_read(EEPROM_PHYS_ADDR, (uint32 *)data, SPI_FLASH_SEC_SIZE) != SPI_FLASH_RESULT_OK)
 #else
     if (!espconfig_spiflash_read(EEPROM_PHYS_ADDR, (uint32_t *)data, SPI_FLASH_SEC_SIZE))
 #endif
     {
+        free(data);
         Log::Error(PSTR("saveConfig . . . EEPROM Read Data Error"));
         return false;
     }
@@ -306,6 +317,7 @@ bool Config::saveConfig(bool isEverySecond)
     if (!espconfig_spiflash_erase_sector(EEPROM_PHYS_ADDR / SPI_FLASH_SEC_SIZE))
 #endif
     {
+        free(data);
         Log::Error(PSTR("saveConfig . . . EEPROM Erase Sector Error"));
         return false;
     }
@@ -317,9 +329,11 @@ bool Config::saveConfig(bool isEverySecond)
     if (!espconfig_spiflash_write(EEPROM_PHYS_ADDR, (uint32_t *)data, SPI_FLASH_SEC_SIZE))
 #endif
     {
+        free(data);
         Log::Error(PSTR("saveConfig . . . EEPROM Write Data Error"));
         return false;
     }
+    free(data);
 
     Log::Info(PSTR("saveConfig . . . EEPROM OK Len: %d Crc: %d"), len, nowCrc);
     return true;
@@ -404,3 +418,104 @@ bool Config::moduleSaveConfig(uint16_t version, uint16_t size, const pb_field_t 
     }
     return status;
 }
+
+#ifdef USE_UFILESYS
+bool Config::FSReadConfig(const char *fileName, uint16_t version, uint16_t size, const pb_field_t fields[], void *dest_struct, uint16_t &crc)
+{
+    if (!FileSystem::getFs())
+    {
+        Log::Error(PSTR("ReadConfig [%s] . . . FS No Support"), fileName + 1);
+        return false;
+    }
+    if (!FileSystem::exists(fileName))
+    {
+        Log::Error(PSTR("ReadConfig [%s] . . . File No Exists"), fileName + 1);
+        return false;
+    }
+
+    File file = FileSystem::getFs()->open(fileName, "r");
+    if (!file)
+    {
+        Log::Error(PSTR("ReadConfig [%s] . . . File Error"), fileName + 1);
+        return false;
+    }
+    uint8_t buf[6] = {0};
+    file.read(buf, 6);
+
+    if ((buf[0] << 8 | buf[1]) != version)
+    {
+        file.close();
+        Log::Error(PSTR("ReadConfig [%s] . . . Version Error"), fileName + 1);
+        return false;
+    }
+
+    uint16_t len = (buf[2] << 8 | buf[3]);
+    uint16_t nowCrc = (buf[4] << 8 | buf[5]);
+    uint8_t data[len];
+    memset(data, 0, len);
+    file.read(data, len);
+    file.close();
+
+    crc = crc16(data, len);
+    if (crc != nowCrc)
+    {
+        crc = 0;
+        Log::Error(PSTR("ReadConfig [%s] . . . Error Crc: %d Crc: %d"), fileName + 1, crc, nowCrc);
+        return false;
+    }
+    memset(dest_struct, 0, size);
+    pb_istream_t stream = pb_istream_from_buffer(data, len);
+    bool status = pb_decode(&stream, fields, dest_struct);
+    if (!status)
+    {
+        Log::Error(PSTR("ReadConfig [%s] . . . PB Error"), fileName + 1);
+        return false;
+    }
+    Log::Info(PSTR("ReadConfig [%s] . . . OK Len: %d"), fileName + 1, len);
+    return true;
+}
+
+bool Config::FSSaveConfig(const char *fileName, uint16_t version, uint16_t size, const pb_field_t fields[], const void *src_struct, uint16_t &crc)
+{
+    if (!FileSystem::getFs())
+    {
+        Log::Error(PSTR("ReadConfig [%s] . . . FS No Support"), fileName + 1);
+        return false;
+    }
+
+    uint8_t buffer[size + 6];
+    pb_ostream_t stream = pb_ostream_from_buffer(buffer + 6, size);
+    bool status = pb_encode(&stream, fields, src_struct);
+    if (!status)
+    {
+        Log::Error(PSTR("SaveConfig [%s] . . . PB Error"), fileName + 1);
+        return false;
+    }
+
+    size_t len = stream.bytes_written;
+    uint16_t nowCrc = Config::crc16(buffer + 6, len);
+    if (nowCrc != crc)
+    {
+        // 拷贝数据
+        buffer[0] = version >> 8;
+        buffer[1] = version;
+        buffer[2] = len >> 8;
+        buffer[3] = len;
+        buffer[4] = nowCrc >> 8;
+        buffer[5] = nowCrc;
+
+        if (FileSystem::save(fileName, buffer, len + 6))
+        {
+            crc = nowCrc;
+            Log::Info(PSTR("SaveConfig [%s] . . . OK Len: %d Crc: %d"), fileName + 1, len, nowCrc);
+            return true;
+        }
+        else
+        {
+            Log::Error(PSTR("SaveConfig [%s] . . . FS Error"), fileName + 1);
+            return false;
+        }
+    }
+    return true;
+}
+#endif

@@ -90,6 +90,11 @@ public:
     static void moduleReadConfig(uint16_t version, uint16_t size, const pb_field_t fields[], void *dest_struct);
     static bool moduleSaveConfig(uint16_t version, uint16_t size, const pb_field_t fields[], const void *src_struct);
 
+#ifdef USE_UFILESYS
+    static bool FSReadConfig(const char *fileName, uint16_t version, uint16_t size, const pb_field_t fields[], void *dest_struct, uint16_t &crc);
+    static bool FSSaveConfig(const char *fileName, uint16_t version, uint16_t size, const pb_field_t fields[], const void *src_struct, uint16_t &crc);
+#endif
+
     static void perSecondDo();
     static bool callModule(uint8_t function);
 };

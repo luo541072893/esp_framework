@@ -15,10 +15,23 @@ void FileSystem::init(void)
     fs = &LittleFS;
     if (!LittleFS.begin())
     {
-        type = 0;
-        fs = 0;
-        Log::Error(PSTR("FS: FlashFS no Support"));
-        return;
+        if (!LittleFS.format())
+        {
+            type = 0;
+            fs = 0;
+            Log::Error(PSTR("FS: FlashFS no Support, Format Error"));
+            return;
+        }
+        else
+        {
+            if (!LittleFS.begin())
+            {
+                type = 0;
+                fs = 0;
+                Log::Error(PSTR("FS: FlashFS no Support"));
+                return;
+            }
+        }
     }
 #endif // ESP8266
 

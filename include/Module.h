@@ -14,6 +14,9 @@
 
 class Module
 {
+protected:
+    uint16_t configCrc = 0;
+
 public:
     virtual void init();
     virtual String getModuleName();
