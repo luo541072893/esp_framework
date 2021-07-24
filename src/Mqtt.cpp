@@ -84,7 +84,7 @@ void Mqtt::perSecondDo(void *parameter)
     if (!WiFi.isConnected() || globalConfig.mqtt.port == 0)
     {
         bitClear(Mqtt::operationFlag, 0);
-#ifdef ESP32
+#if (defined ESP32) && (!defined CONFIG_FREERTOS_UNICORE)
         vTaskDelete(NULL);
 #endif
         return;
@@ -120,7 +120,7 @@ void Mqtt::perSecondDo(void *parameter)
         }
     }
     bitClear(Mqtt::operationFlag, 0);
-#ifdef ESP32
+#if (defined ESP32) && (!defined CONFIG_FREERTOS_UNICORE)
     vTaskDelete(NULL);
 #endif
 }
@@ -153,8 +153,8 @@ bool Mqtt::callModule(uint8_t function)
             return false;
         }
         bitSet(Mqtt::operationFlag, 0);
-#ifdef ESP32
-        xTaskCreate(perSecondDo, "perSecondDo", 10000, NULL, 0, NULL);
+#if (defined ESP32) && (!defined CONFIG_FREERTOS_UNICORE)
+        xTaskCreateUniversal(perSecondDo, "perSecondDo", 4096, NULL, 2, NULL, CONFIG_ARDUINO_RUNNING_CORE == 1 ? 0 : 1);
 #else
         perSecondDo(NULL);
 #endif
