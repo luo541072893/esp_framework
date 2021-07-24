@@ -4,7 +4,11 @@
 #include "Http.h"
 #include "Util.h"
 
+uint8_t Framework::sleepTime = 50;
 uint16_t Framework::rebootCount = 0;
+uint32_t Framework::loopLoadAvg = 160;
+bool Framework::sleepNormal = false;
+
 #ifndef DISABLE_MQTT
 #ifndef USE_ASYNC_MQTT_CLIENT
 WiFiClient wifiClient;
@@ -169,8 +173,26 @@ void Framework::setup()
     tickerPerSecond->attach(1, tickerPerSecondDo);
 }
 
+void Framework::sleepDelay(uint32_t mseconds)
+{
+    if (mseconds)
+    {
+        uint32_t wait = millis() + mseconds;
+        while (!Util::timeReached(wait) && !Serial.available())
+        {
+            delay(1);
+        }
+    }
+    else
+    {
+        delay(0);
+    }
+}
+
 void Framework::loop()
 {
+    uint32_t my_sleep = millis();
+
     if (rebootCount >= 3)
     {
         WifiMgr::loop();
@@ -203,6 +225,39 @@ void Framework::loop()
             ptr->perSecondDo();
             ptr = ptr->next;
         }
+        //Log::Info("loopLoadAvg:%d", loopLoadAvg);
     }
-    delay(1);
+
+    uint32_t my_activity = millis() - my_sleep;
+    if (sleepNormal)
+    {
+        sleepDelay(sleepTime);
+    }
+    else
+    {
+        if (my_activity < (uint32_t)sleepTime)
+        {
+            sleepDelay((uint32_t)sleepTime - my_activity); // Provide time for background tasks like wifi
+        }
+        else
+        {
+            if (!bitRead(Config::statusFlag, 0) && !bitRead(Config::statusFlag, 2))
+            {
+                sleepDelay(my_activity / 2); // If wifi down and my_activity > setoption36 then force loop delay to 1/3 of my_activity period
+            }
+        }
+    }
+
+    if (!my_activity)
+    {
+        my_activity++;
+    }
+    uint32_t loop_delay = sleepTime;
+    if (!loop_delay)
+    {
+        loop_delay++;
+    }
+    uint32_t loops_per_second = 1000 / loop_delay; // We need to keep track of this many loops per second
+    uint32_t this_cycle_ratio = 100 * my_activity / loop_delay;
+    loopLoadAvg = loopLoadAvg - (loopLoadAvg / loops_per_second) + (this_cycle_ratio / loops_per_second); // Take away one loop average away and add the new one
 }
