@@ -16,6 +16,10 @@
 
 #define MQTT_CONNECTED_CALLBACK_SIGNATURE std::function<void()> connectedcallback
 
+#if CONFIG_IDF_TARGET_ESP32 && (!defined USE_TASK_MQTT_CONNECT)
+#define USE_TASK_MQTT_CONNECT 1
+#endif
+
 class Mqtt
 {
 protected:
