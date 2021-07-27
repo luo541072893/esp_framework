@@ -3,6 +3,10 @@
 #include "FileSystem.h"
 #include "Log.h"
 
+#if CONFIG_IDF_TARGET_ESP32
+#define LittleFS LITTLEFS
+#endif
+
 FS *FileSystem::fs = 0;
 uint8_t FileSystem::type = 0;
 
@@ -37,8 +41,8 @@ void FileSystem::init(void)
 
 #ifdef ESP32
     // try lfs first
-    fs = &LITTLEFS;
-    if (!LITTLEFS.begin(true))
+    fs = &LittleFS;
+    if (!LittleFS.begin(true))
     {
         // ffat is second
         fs = &FFat;
@@ -82,11 +86,11 @@ uint32_t FileSystem::info(uint32_t sel)
 #ifdef ESP32
         if (sel == 0)
         {
-            result = LITTLEFS.totalBytes();
+            result = LittleFS.totalBytes();
         }
         else
         {
-            result = LITTLEFS.totalBytes() - LITTLEFS.usedBytes();
+            result = LittleFS.totalBytes() - LittleFS.usedBytes();
         }
 #endif // ESP32
         break;
@@ -117,7 +121,7 @@ bool FileSystem::exists(const char *fname)
     bool yes = fs->exists(fname);
     if (!yes)
     {
-        Log::Info(PSTR("FS: File '%s' not found"), fname + 1); // Skip leading slash
+        // Log::Info(PSTR("FS: File '%s' not found"), fname + 1); // Skip leading slash
     }
     return yes;
 }
@@ -177,7 +181,7 @@ bool FileSystem::load(const char *fname, uint8_t *buf, uint32_t len)
     File file = fs->open(fname, "r");
     if (!file)
     {
-        Log::Info(PSTR("FS: File '%s' not found"), fname + 1); // Skip leading slash
+        // Log::Info(PSTR("FS: File '%s' not found"), fname + 1); // Skip leading slash
         return false;
     }
 
