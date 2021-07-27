@@ -45,7 +45,19 @@ extern "C" uint32_t _EEPROM_start; //See EEPROM.cpp
 #include <nvs.h>
 #include <Update.h>
 #include <HTTPUpdate.h>
-#include <rom/rtc.h>
+#if ESP_IDF_VERSION_MAJOR > 3      // IDF 4+
+  #if CONFIG_IDF_TARGET_ESP32      // ESP32/PICO-D4
+    #include "esp32/rom/rtc.h"
+  #elif CONFIG_IDF_TARGET_ESP32S2  // ESP32-S2
+    #include "esp32s2/rom/rtc.h"
+  #elif CONFIG_IDF_TARGET_ESP32C3  // ESP32-C3
+    #include "esp32c3/rom/rtc.h"
+  #else
+    #error Target CONFIG_IDF_TARGET is not supported
+  #endif
+#else // ESP32 Before IDF 4.0
+  #include "rom/rtc.h"
+#endif
 #include <EEPROM.h>
 #include <WiFiUdp.h>
 
@@ -54,9 +66,13 @@ extern "C" uint32_t _EEPROM_start; //See EEPROM.cpp
 #define ESPHTTPUpdate httpUpdate
 
 #define ESP_Restart() ESP.restart()
+#if CONFIG_IDF_TARGET_ESP32
 #define WIFI_setHostname(aHostname)                     \
     WiFi.config(INADDR_NONE, INADDR_NONE, INADDR_NONE); \
     WiFi.setHostname(aHostname)
+#else
+#define WIFI_setHostname(aHostname) WiFi.setHostname(aHostname)
+#endif
 
 #define isFlashInterfacePin(p) 0
 
