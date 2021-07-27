@@ -69,6 +69,12 @@ void WifiMgr::wiFiEvent(WiFiEvent_t event)
 
 void WifiMgr::connectWifi()
 {
+#ifdef FORCE_WIFI_SSID
+    strcpy(globalConfig.wifi.ssid, FORCE_WIFI_SSID);
+#endif
+#ifdef FORCE_WIFI_PASS
+    strcpy(globalConfig.wifi.pass, FORCE_WIFI_PASS);
+#endif
     delay(50);
 #ifdef ESP32
     WiFi.onEvent(WifiMgr::wiFiEvent);
