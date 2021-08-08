@@ -23,7 +23,7 @@
 class Mqtt
 {
 protected:
-    static String getTopic(uint8_t prefix, String subtopic);
+    static String getTopic(uint8_t prefix, String subtopic, String devType = "");
     static uint8_t operationFlag;
     static void doReportInfo();
 
@@ -44,9 +44,9 @@ public:
     static void mqttSetLoopCallback(MQTT_CALLBACK_SIGNATURE);
     static void mqttSetConnectedCallback(MQTT_CONNECTED_CALLBACK_SIGNATURE);
 
-    static String getCmndTopic(String topic);
-    static String getStatTopic(String topic);
-    static String getTeleTopic(String topic);
+    static String getCmndTopic(String topic, String devType = "");
+    static String getStatTopic(String topic, String devType = "");
+    static String getTeleTopic(String topic, String devType = "");
 
 #ifndef USE_ASYNC_MQTT_CLIENT
     static PubSubClient &setClient(Client &client);

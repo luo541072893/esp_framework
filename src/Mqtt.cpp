@@ -169,19 +169,19 @@ bool Mqtt::callModule(uint8_t function)
     return false;
 }
 
-String Mqtt::getCmndTopic(String topic)
+String Mqtt::getCmndTopic(String topic, String devType)
 {
-    return getTopic(0, topic);
+    return getTopic(0, topic, devType);
 }
 
-String Mqtt::getStatTopic(String topic)
+String Mqtt::getStatTopic(String topic, String devType)
 {
-    return getTopic(1, topic);
+    return getTopic(1, topic, devType);
 }
 
-String Mqtt::getTeleTopic(String topic)
+String Mqtt::getTeleTopic(String topic, String devType)
 {
-    return getTopic(2, topic);
+    return getTopic(2, topic, devType);
 }
 
 void Mqtt::mqttSetLoopCallback(MQTT_CALLBACK_SIGNATURE)
@@ -263,7 +263,7 @@ bool Mqtt::unsubscribe(const char *topic)
     return mqttClient.unsubscribe(topic);
 }
 
-String Mqtt::getTopic(uint8_t prefix, String subtopic)
+String Mqtt::getTopic(uint8_t prefix, String subtopic, String devType)
 {
     // 0: Cmnd  1:Stat 2:Tele
     String fulltopic = String(globalConfig.mqtt.topic);
@@ -272,7 +272,7 @@ String Mqtt::getTopic(uint8_t prefix, String subtopic)
         fulltopic += F("/%prefix%"); // Need prefix for commands to handle mqtt topic loops
     }
     fulltopic.replace(F("%prefix%"), (prefix == 0 ? F("cmnd") : ((prefix == 1 ? F("stat") : F("tele")))));
-    fulltopic.replace(F("%hostname%"), UID);
+    fulltopic.replace(F("%hostname%"), devType.length() > 0 ? String(UID) + F("/") + devType : UID);
     fulltopic.replace(F("%module%"), module ? module->getModuleName() : F("module"));
     fulltopic.replace(F("#"), F(""));
     fulltopic.replace(F("//"), F("/"));
