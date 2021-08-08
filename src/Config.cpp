@@ -354,6 +354,13 @@ void Config::perSecondDo()
         saveConfig(Config::isDelay ? false : true);
         Config::isDelay = false;
     }
+    if (bitRead(Config::operationFlag, 1))
+    {
+        saveConfig(true);
+        delay(200);
+        Led::blinkLED(400, 4);
+        ESP_Restart();
+    }
 }
 
 bool Config::callModule(uint8_t function)
