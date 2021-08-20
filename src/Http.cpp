@@ -47,7 +47,7 @@ void Http::handleRoot()
     {
         if (ptr != module)
         {
-            snprintf_P(html, sizeof(html), PSTR("<button id='tb%d' onclick='tab(%d)'>%s</button>"), ++ci, ci, ptr->getModuleCNName());
+            snprintf_P(html, sizeof(html), PSTR("<button id='tb%d' onclick='tab(%d)'>%s</button>"), ++ci, ci, ptr->getModuleCNName().c_str());
             server->sendContent_P(html);
         }
         ptr = ptr->next;
