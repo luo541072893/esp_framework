@@ -1,7 +1,84 @@
 #include "Common.h"
 #include "Log.h"
+#ifdef ESP8266
+uint32_t FlashWriteStartSector(void)
+{
+    return (ESP.getSketchSize() / SPI_FLASH_SEC_SIZE) + 2; // Stay on the safe side
+}
+
+uint32_t FlashWriteMaxSector(void)
+{
+    return (((uint32_t)&_FS_start - 0x40200000) / SPI_FLASH_SEC_SIZE) - 2;
+}
+
+uint8_t *FlashDirectAccess(void)
+{
+    return (uint8_t *)(0x40200000 + (FlashWriteStartSector() * SPI_FLASH_SEC_SIZE));
+}
+#endif
 
 #ifdef ESP32
+extern "C"
+{
+#include "esp_ota_ops.h"
+#include "esp_image_format.h"
+}
+
+uint32_t EspFlashBaseAddress(void)
+{
+    const esp_partition_t *partition = esp_ota_get_next_update_partition(nullptr);
+    if (!partition)
+    {
+        return 0;
+    }
+    return partition->address; // For tasmota 0x00010000 or 0x00200000
+}
+
+uint32_t EspFlashBaseEndAddress(void)
+{
+    const esp_partition_t *partition = esp_ota_get_next_update_partition(nullptr);
+    if (!partition)
+    {
+        return 0;
+    }
+    return partition->address + partition->size; // For tasmota 0x00200000 or 0x003F0000
+}
+
+uint8_t *EspFlashMmap(uint32_t address)
+{
+    static spi_flash_mmap_handle_t handle = 0;
+
+    if (handle)
+    {
+        spi_flash_munmap(handle);
+        handle = 0;
+    }
+
+    const uint8_t *data;
+    int32_t err = spi_flash_mmap(address, 5 * SPI_FLASH_MMU_PAGE_SIZE, SPI_FLASH_MMAP_DATA, (const void **)&data, &handle);
+    return (uint8_t *)data;
+}
+
+uint32_t FlashWriteStartSector(void)
+{
+    // Needs to be on SPI_FLASH_MMU_PAGE_SIZE (= 0x10000) alignment for mmap usage
+    uint32_t aligned_address = ((EspFlashBaseAddress() + (2 * SPI_FLASH_MMU_PAGE_SIZE)) / SPI_FLASH_MMU_PAGE_SIZE) * SPI_FLASH_MMU_PAGE_SIZE;
+    return aligned_address / SPI_FLASH_SEC_SIZE;
+}
+
+uint32_t FlashWriteMaxSector(void)
+{
+    // Needs to be on SPI_FLASH_MMU_PAGE_SIZE (= 0x10000) alignment for mmap usage
+    uint32_t aligned_end_address = (EspFlashBaseEndAddress() / SPI_FLASH_MMU_PAGE_SIZE) * SPI_FLASH_MMU_PAGE_SIZE;
+    return aligned_end_address / SPI_FLASH_SEC_SIZE;
+}
+
+uint8_t *FlashDirectAccess(void)
+{
+    uint32_t address = FlashWriteStartSector() * SPI_FLASH_SEC_SIZE;
+    uint8_t *data = EspFlashMmap(address);
+    return data;
+}
 
 EEPROMClass EEPROMconfig("espconfig", SPI_FLASH_SEC_SIZE);
 bool isIniteeprom = false;
@@ -74,32 +151,52 @@ uint32_t ESP_getChipId(void)
     return id;
 }
 
-String ESP32GetResetReason(uint32_t cpu_no) {
-	// tools\sdk\include\esp32\rom\rtc.h
-	// tools\sdk\esp32\include\esp_rom\include\esp32c3\rom\rtc.h
-	// tools\sdk\esp32\include\esp_rom\include\esp32s2\rom\rtc.h
-  switch (rtc_get_reset_reason(cpu_no)) {                                   //     ESP32             ESP32-S / ESP32-C
-    case 1  : return F("Vbat power on reset");                              // 1   POWERON_RESET     POWERON_RESET
-    case 3  : return F("Software reset digital core");                      // 3   SW_RESET          RTC_SW_SYS_RESET
-    case 4  : return F("Legacy watch dog reset digital core");              // 4   OWDT_RESET        -
-    case 5  : return F("Deep Sleep reset digital core");                    // 5   DEEPSLEEP_RESET   DEEPSLEEP_RESET
-    case 6  : return F("Reset by SLC module, reset digital core");          // 6   SDIO_RESET
-    case 7  : return F("Timer Group0 Watch dog reset digital core");        // 7   TG0WDT_SYS_RESET
-    case 8  : return F("Timer Group1 Watch dog reset digital core");        // 8   TG1WDT_SYS_RESET
-    case 9  : return F("RTC Watch dog Reset digital core");                 // 9   RTCWDT_SYS_RESET
-    case 10 : return F("Instrusion tested to reset CPU");                   // 10  INTRUSION_RESET
-    case 11 : return F("Time Group0 reset CPU");                            // 11  TGWDT_CPU_RESET   TG0WDT_CPU_RESET
-    case 12 : return F("Software reset CPU");                               // 12  SW_CPU_RESET      RTC_SW_CPU_RESET
-    case 13 : return F("RTC Watch dog Reset CPU");                          // 13  RTCWDT_CPU_RESET
-    case 14 : return F("or APP CPU, reseted by PRO CPU");                   // 14  EXT_CPU_RESET     -
-    case 15 : return F("Reset when the vdd voltage is not stable");         // 15  RTCWDT_BROWN_OUT_RESET
-    case 16 : return F("RTC Watch dog reset digital core and rtc module");  // 16  RTCWDT_RTC_RESET
-    case 17 : return F("Time Group1 reset CPU");                            // 17  -                 TG1WDT_CPU_RESET
-    case 18 : return F("Super watchdog reset digital core and rtc module"); // 18  -                 SUPER_WDT_RESET
-    case 19 : return F("Glitch reset digital core and rtc module");         // 19  -                 GLITCH_RTC_RESET
-  }
+String ESP32GetResetReason(uint32_t cpu_no)
+{
+    // tools\sdk\include\esp32\rom\rtc.h
+    // tools\sdk\esp32\include\esp_rom\include\esp32c3\rom\rtc.h
+    // tools\sdk\esp32\include\esp_rom\include\esp32s2\rom\rtc.h
+    switch (rtc_get_reset_reason(cpu_no))
+    { //     ESP32             ESP32-S / ESP32-C
+    case 1:
+        return F("Vbat power on reset"); // 1   POWERON_RESET     POWERON_RESET
+    case 3:
+        return F("Software reset digital core"); // 3   SW_RESET          RTC_SW_SYS_RESET
+    case 4:
+        return F("Legacy watch dog reset digital core"); // 4   OWDT_RESET        -
+    case 5:
+        return F("Deep Sleep reset digital core"); // 5   DEEPSLEEP_RESET   DEEPSLEEP_RESET
+    case 6:
+        return F("Reset by SLC module, reset digital core"); // 6   SDIO_RESET
+    case 7:
+        return F("Timer Group0 Watch dog reset digital core"); // 7   TG0WDT_SYS_RESET
+    case 8:
+        return F("Timer Group1 Watch dog reset digital core"); // 8   TG1WDT_SYS_RESET
+    case 9:
+        return F("RTC Watch dog Reset digital core"); // 9   RTCWDT_SYS_RESET
+    case 10:
+        return F("Instrusion tested to reset CPU"); // 10  INTRUSION_RESET
+    case 11:
+        return F("Time Group0 reset CPU"); // 11  TGWDT_CPU_RESET   TG0WDT_CPU_RESET
+    case 12:
+        return F("Software reset CPU"); // 12  SW_CPU_RESET      RTC_SW_CPU_RESET
+    case 13:
+        return F("RTC Watch dog Reset CPU"); // 13  RTCWDT_CPU_RESET
+    case 14:
+        return F("or APP CPU, reseted by PRO CPU"); // 14  EXT_CPU_RESET     -
+    case 15:
+        return F("Reset when the vdd voltage is not stable"); // 15  RTCWDT_BROWN_OUT_RESET
+    case 16:
+        return F("RTC Watch dog reset digital core and rtc module"); // 16  RTCWDT_RTC_RESET
+    case 17:
+        return F("Time Group1 reset CPU"); // 17  -                 TG1WDT_CPU_RESET
+    case 18:
+        return F("Super watchdog reset digital core and rtc module"); // 18  -                 SUPER_WDT_RESET
+    case 19:
+        return F("Glitch reset digital core and rtc module"); // 19  -                 GLITCH_RTC_RESET
+    }
 
-  return F("No meaning");                                                   // 0 and undefined
+    return F("No meaning"); // 0 and undefined
 }
 
 String ESP_getResetReason(void)

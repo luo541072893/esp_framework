@@ -27,7 +27,7 @@
 
 #define DRAM_ATTR
 
-#define PortUdp_write(p,n) PortUdp.write(p, n)
+#define PortUdp_write(p, n) PortUdp.write(p, n)
 
 extern "C" uint32_t _EEPROM_start; //See EEPROM.cpp
 #define EEPROM_PHYS_ADDR ((uint32_t)(&_EEPROM_start) - 0x40200000)
@@ -98,4 +98,8 @@ uint32_t pin2chan(uint32_t pin);
 void analogWrite(uint8_t pin, int val);
 extern uint8_t pwm_channel[8];
 #endif
+
+uint32_t FlashWriteStartSector(void);
+uint32_t FlashWriteMaxSector(void);
+uint8_t *FlashDirectAccess(void);
 #endif
