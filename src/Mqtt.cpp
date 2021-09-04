@@ -17,7 +17,7 @@ char mqttWill[80] = {0};
 
 bool Mqtt::mqttConnect()
 {
-    if (!WiFi.isConnected())
+    if (!bitRead(Config::statusFlag, 0) && !bitRead(Config::statusFlag, 2))
     {
         Log::Info(PSTR("wifi disconnected"));
         return false;
@@ -127,7 +127,7 @@ void Mqtt::perSecondDo(void *parameter)
 
 void Mqtt::loop()
 {
-    if (!bitRead(Config::statusFlag, 0) || !bitRead(Config::statusFlag, 1))
+    if ((!bitRead(Config::statusFlag, 0) && !bitRead(Config::statusFlag, 2)) || !bitRead(Config::statusFlag, 1))
     {
         return;
     }
