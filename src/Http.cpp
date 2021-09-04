@@ -170,7 +170,7 @@ void Http::handleRoot()
     server->sendContent_P(html);
 
     snprintf_P(html, sizeof(html),
-               PSTR("<tr><td>主题</td><td><input type='text' name='mqtt_topic' value='%s' style='min-width:90%'></td></tr>"
+               PSTR("<tr><td>主题</td><td><input type='text' name='mqtt_topic' value='%s' style='min-width:90%%'></td></tr>"
                     "<tr><td>心跳上报间隔</td><td><input type='number' min='0' max='3600' name='interval' required value='%d'>&nbsp;秒&nbsp;&nbsp;0为不上报</td></tr>"),
                globalConfig.mqtt.topic, globalConfig.mqtt.interval);
     server->sendContent_P(html);

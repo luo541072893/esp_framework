@@ -81,7 +81,7 @@ void Mqtt::availability()
 
 void Mqtt::perSecondDo(void *parameter)
 {
-    if (!WiFi.isConnected() || globalConfig.mqtt.port == 0)
+    if ((!bitRead(Config::statusFlag, 0) && !bitRead(Config::statusFlag, 2)) || globalConfig.mqtt.port == 0)
     {
         bitClear(Mqtt::operationFlag, 0);
 #if USE_TASK_MQTT_CONNECT
