@@ -66,33 +66,32 @@ void Http::handleRoot()
     snprintf_P(html, sizeof(html),
                PSTR("<div id='tab'>"
                     "<div id='tab1' style='display: block;'>"
-                    "<table class='gridtable'><thead><tr><th colspan='2'>WiFi状态</th></tr></thead><tbody>"
+                    "<table class='gridtable'><thead><tr><th colspan='2'>ESP状态</th></tr></thead><tbody>"
                     "<tr><td>主机名</td><td>%s</td></tr>"
-                    "<tr><td>WiFi模式</td><td>%s</td></tr>"
-                    "<tr><td>SSID</td><td>%s</td></tr>"),
-               UID,
-               (mode == WIFI_STA ? PSTR("STA") : (mode == WIFI_AP ? PSTR("AP") : PSTR("AP STA"))),
-               WiFi.SSID().c_str());
-    server->sendContent_P(html);
-
-    snprintf_P(html, sizeof(html),
-               PSTR("<tr><td>RSSI</td><td>%ddBm</td></tr>"
                     "<tr><td>开机时间</td><td id='uptime'>%s</td></tr>"
-                    "<tr><td>空闲内存</td><td><span id='free_mem'>%d</span> kB</td></tr>"
-                    "<tr><td>IP地址</td><td>%s</td></tr>"
-                    "<tr><td>DHCP</td><td>%s</td></tr>"
 #ifdef ESP32
                     "<tr><td>CPU温度</td><td>%.2f°C</td></tr>"
 #endif
-                    "</tbody></table>"
-                    "</div>"),
-               WiFi.RSSI(), Rtc::msToHumanString(millis()).c_str(), ESP.getFreeHeap() / 1024,
-               WiFi.localIP().toString().c_str(), (globalConfig.wifi.is_static ? PSTR("静态IP") : PSTR("DHCP"))
+                    "<tr><td>空闲内存</td><td><span id='free_mem'>%d</span> kB</td></tr>"),
+               UID, Rtc::msToHumanString(millis()).c_str(),
 #ifdef ESP32
-                                                      ,
-               temperatureRead()
+               temperatureRead(),
 #endif
-    );
+               ESP.getFreeHeap() / 1024);
+    server->sendContent_P(html);
+
+    snprintf_P(html, sizeof(html),
+               PSTR(
+                   "<tr><td>WiFi模式</td><td>%s</td></tr>"
+                   "<tr><td>SSID</td><td>%s</td></tr>"
+                   "<tr><td>RSSI</td><td>%ddBm</td></tr>"
+                   "<tr><td>IP地址</td><td>%s</td></tr>"
+                   "<tr><td>DHCP</td><td>%s</td></tr>"
+                   "</tbody></table>"
+                   "</div>"),
+               (mode == WIFI_STA ? PSTR("STA") : (mode == WIFI_AP ? PSTR("AP") : PSTR("AP STA"))),
+               WiFi.SSID().c_str(), WiFi.RSSI(),
+               WifiMgr::networkAddress().toString().c_str(), (globalConfig.wifi.is_static ? PSTR("静态IP") : PSTR("DHCP")));
     server->sendContent_P(html);
     // TAB 1 End
 

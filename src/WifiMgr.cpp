@@ -360,6 +360,17 @@ bool WifiMgr::callModule(uint8_t function)
     return false;
 }
 
+IPAddress WifiMgr::networkAddress()
+{
+#ifdef ESP32
+    if (bitRead(Config::statusFlag, 2))
+    {
+        return ETH.localIP();
+    }
+#endif
+    return WiFi.localIP();
+}
+
 bool WifiMgr::isIp(String str)
 {
     int a, b, c, d;
