@@ -157,7 +157,7 @@ void Rtc::addSecond()
 
 void Rtc::getNtp()
 {
-    if (WiFi.status() == WL_CONNECTED)
+    if (bitRead(Config::statusFlag, 0) || bitRead(Config::statusFlag, 2))
     {
         uint32_t ntp_time = sntp_get_current_timestamp();
         if (ntp_time > START_VALID_TIME)
