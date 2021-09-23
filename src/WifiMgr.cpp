@@ -48,6 +48,18 @@ void WifiMgr::wiFiEvent(WiFiEvent_t event)
         break;
     case SYSTEM_EVENT_ETH_CONNECTED:
         Log::Info(PSTR("ETH Connected"));
+        if (globalConfig.wifi.is_static)
+        {
+            isDHCP = false;
+            IPAddress static_ip;
+            IPAddress static_sn;
+            IPAddress static_gw;
+            static_ip.fromString(globalConfig.wifi.ip);
+            static_sn.fromString(globalConfig.wifi.sn);
+            static_gw.fromString(globalConfig.wifi.gw);
+            Log::Info(PSTR("Custom STA IP/GW/Subnet: %s %s %s"), globalConfig.wifi.ip, globalConfig.wifi.sn, globalConfig.wifi.gw);
+            ETH.config(static_ip, static_gw, static_sn, IPAddress(223, 5, 5, 5), IPAddress(114, 114, 114, 114));
+        }
         break;
     case SYSTEM_EVENT_ETH_GOT_IP:
         Log::Info(PSTR("ETH MAC: %s, IPv4: %s, %dMbps"), ETH.macAddress().c_str(), ETH.localIP().toString().c_str(), ETH.linkSpeed());
