@@ -10,7 +10,12 @@
 #include <SPI.h>
 #endif // ESP8266
 #ifdef ESP32
+#if CONFIG_IDF_TARGET_ESP32 and ESP_IDF_VERSION_MAJOR == 3
 #include <LITTLEFS.h>
+#define LittleFS LITTLEFS
+#else
+#include <LittleFS.h>
+#endif
 #include "FFat.h"
 #include "FS.h"
 #endif // ESP32

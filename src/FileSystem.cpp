@@ -3,10 +3,6 @@
 #include "FileSystem.h"
 #include "Log.h"
 
-#if CONFIG_IDF_TARGET_ESP32
-#define LittleFS LITTLEFS
-#endif
-
 FS *FileSystem::fs = 0;
 uint8_t FileSystem::type = 0;
 
