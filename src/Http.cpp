@@ -382,7 +382,7 @@ void Http::handleRoot()
 
     // TAB 2
     snprintf_P(html, sizeof(html), PSTR("<script type='text/javascript'>%ssetRadioValue('dhcp', '%d');dhcponchange(null);"),
-               WiFi.isConnected() ? PSTR("") : PSTR("scanWifi();"), globalConfig.wifi.is_static ? 2 : 1);
+               bitRead(Config::statusFlag, 0) || bitRead(Config::statusFlag, 2) ? PSTR("") : PSTR("scanWifi();"), globalConfig.wifi.is_static ? 2 : 1);
     server->sendContent_P(html);
 
     if (globalConfig.wifi.is_restart)
