@@ -28,6 +28,11 @@ private:
     static void handleGetStatus();
     static void handleUpdate();
     static void handleUpdateUpload();
+#ifdef USE_UFILESYS
+    static void handleFileDo();
+    static void handleUploadFile();
+    static void handleUploadFileUpload();
+#endif
     static bool checkAuth();
 
 public:

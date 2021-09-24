@@ -18,6 +18,7 @@ void Http::handleRoot()
     {
         return;
     }
+    bool isMore = server->hasArg(F("more"));
 
     char html[512] = {0};
     server->setContentLength(CONTENT_LENGTH_UNKNOWN);
@@ -54,6 +55,12 @@ void Http::handleRoot()
     }
 
     ::callModule(FUNC_WEB_ADD_TAB_BUTTON);
+    if (isMore)
+    {
+#ifdef USE_UFILESYS
+        server->sendContent_P(PSTR("<button id='tb7' onclick='tab(7)'>文件</button>"));
+#endif
+    }
     server->sendContent_P(
         PSTR("<button id='tb4' onclick='tab(4)'>关于</button>"
 #ifdef WEB_LOG_SIZE
@@ -276,6 +283,37 @@ void Http::handleRoot()
     }
 
     ::callModule(FUNC_WEB_ADD_TAB);
+
+    if (isMore)
+    {
+#ifdef USE_UFILESYS
+        // TAB 7 Start
+        server->sendContent_P(
+            PSTR("<div id='tab7'>"
+                 "<table class='gridtable'><thead><tr><th>文件名</th><th>大小</th><th>操作</th></tr></thead><tbody>"));
+
+        File root = LittleFS.open("/");
+        File file = root.openNextFile();
+        while (file)
+        {
+            snprintf_P(html, sizeof(html), PSTR("<tr><td>%s</td><td>%d</td><td><a href='/file_do?t=down&f=%s'>下载</a>&nbsp;&nbsp;<a href='#' onclick=\"javascript:if(confirm('你确定要删除该文件？')){ajaxPost('/file_do','t=del&f=%s')}\">删除</a></td></tr>"), file.name() + 1, file.size(), file.name(), file.name());
+            server->sendContent_P(html);
+            file = root.openNextFile();
+        }
+        server->sendContent_P(PSTR("</tbody></table>"));
+
+        snprintf_P(html, sizeof(html),
+                   PSTR("<table class='gridtable'><thead><tr><th colspan='2'>上传文件</th></tr></thead><tbody>"
+                        "<form method='POST' action='/upload_file' enctype='multipart/form-data' onsubmit='postupdate(this);return false'>"
+                        "<tr><td colspan='2'><a class='file'><input type='file' name='file'>选择文件</a></td></tr>"
+                        "<tr><td colspan='2'><button type='submit' class='btn-info' onclick=\"return confirm('确定要上传？可能覆盖原有文件。')\">上传</button><br>"
+                        "</form>"
+                        "</tbody></table>"
+                        "</div>"));
+        server->sendContent_P(html);
+        // TAB 7 End
+#endif
+    }
 
     // TAB 4 Start
     server->sendContent_P(
@@ -725,7 +763,7 @@ void Http::handleGetStatus()
     server->setContentLength(CONTENT_LENGTH_UNKNOWN);
     server->send_P(200, PSTR("text/html"), PSTR("{\"code\":1,\"msg\":\"\",\"data\":{"));
 
-    char html[512] = {0};
+    char html[1024] = {0};
     snprintf_P(html, sizeof(html), PSTR("\"uptime\":\"%s\",\"free_mem\":%d"), Rtc::msToHumanString(millis()).c_str(), ESP.getFreeHeap() / 1024);
     server->sendContent_P(html);
 
@@ -985,6 +1023,161 @@ void Http::handleUpdateUpload()
     delay(0);
 }
 
+#ifdef USE_UFILESYS
+void Http::handleFileDo()
+{
+    String type = server->arg(F("t"));
+    String filex = server->arg(F("f"));
+    char file[50];
+    strcpy(file, filex.c_str());
+    if (!FileSystem::getFs()->exists(file))
+    {
+        Log::Info(PSTR("File '%s' not found"), file);
+        if (type == "del")
+        {
+            server->send_P(200, PSTR("text/html"), PSTR("{\"code\":0,\"msg\":\"文件不存在\"}"));
+        }
+        else
+        {
+            server->send_P(404, PSTR("text/plain"), "not found");
+        }
+        return;
+    }
+    if (type == "del")
+    {
+        FileSystem::getFs()->remove(file);
+        server->send_P(200, PSTR("text/html"), PSTR("{\"code\":1,\"msg\":\"删除成功\"}"));
+        return;
+    }
+
+    File download_file = FileSystem::getFs()->open(file, "r");
+    if (!download_file)
+    {
+        Log::Info(PSTR("Could not open file '%s'"), file);
+        server->send_P(404, PSTR("text/plain"), "file could not open");
+        return;
+    }
+
+    if (download_file.isDirectory())
+    {
+        download_file.close();
+        server->send_P(404, PSTR("text/plain"), "file is directory");
+        return;
+    }
+
+    WiFiClient download_Client;
+    uint32_t flen = download_file.size();
+
+    download_Client = server->client();
+    server->setContentLength(flen);
+
+    char attachment[100];
+    char *cp;
+    for (uint32_t cnt = strlen(file); cnt >= 0; cnt--)
+    {
+        if (file[cnt] == '/')
+        {
+            cp = &file[cnt + 1];
+            break;
+        }
+    }
+
+    snprintf_P(attachment, sizeof(attachment), PSTR("attachment; filename=%s"), cp);
+    server->sendHeader(F("Content-Disposition"), attachment);
+    server->send_P(200, PSTR("application/octet-stream"), "");
+
+    uint8_t buff[512];
+    uint32_t bread;
+    // transfer is about 150kb/s
+    uint32_t cnt = 0;
+    while (download_file.available())
+    {
+        bread = download_file.read(buff, sizeof(buff));
+        uint32_t bw = download_Client.write((const char *)buff, bread);
+        if (!bw)
+        {
+            break;
+        }
+        cnt++;
+        if (cnt > 7)
+        {
+            cnt = 0;
+        }
+        delay(0);
+    }
+    download_file.close();
+    download_Client.stop();
+    return;
+}
+
+void Http::handleUploadFile()
+{
+    if (!checkAuth())
+    {
+        return;
+    }
+    if (Update.hasError())
+    {
+        char html[256] = {0};
+        uint8_t _error = Update.getError();
+        snprintf_P(html, sizeof(html), PSTR("Update Error[%u]: UNKNOWN"), _error);
+        Log::Error(html);
+        char out[150] = {0};
+        snprintf_P(out, sizeof(out), PSTR("{\"code\":0,\"msg\":\"%s\"}"), html);
+        server->send_P(200, PSTR("text/html"), out);
+    }
+    else
+    {
+        server->send_P(200, PSTR("text/html"), PSTR("{\"code\":1,\"msg\":\"上传文件成功，正在重启 . . .\"}"));
+        delay(100);
+        ESP_Restart();
+    }
+}
+
+File ufs_upload_file;
+void Http::handleUploadFileUpload()
+{
+    HTTPUpload &upload = server->upload();
+    if (upload.status == UPLOAD_FILE_START)
+    {
+        if (globalConfig.http.user[0] != 0 && globalConfig.http.pass[0] != 0 && server->client().localIP().toString() != "192.168.4.1" && !server->authenticate(globalConfig.http.user, globalConfig.http.pass))
+        {
+            Log::Info(PSTR("Unauthenticated Update"));
+            return;
+        }
+        Log::Info(PSTR("Update: %s"), upload.filename.c_str());
+
+        char npath[48];
+        snprintf_P(npath, sizeof(npath), PSTR("/%s"), upload.filename.c_str());
+        FileSystem::getFs()->remove(npath);
+        ufs_upload_file = FileSystem::getFs()->open(npath, "w");
+    }
+    else if (upload.status == UPLOAD_FILE_WRITE && !Update.hasError())
+    {
+        if (ufs_upload_file)
+        {
+            ufs_upload_file.write(upload.buf, upload.currentSize);
+        }
+    }
+    else if (upload.status == UPLOAD_FILE_END && !Update.hasError())
+    {
+        if (ufs_upload_file)
+        {
+            ufs_upload_file.close();
+        }
+    }
+    else if (upload.status == UPLOAD_FILE_ABORTED)
+    {
+        if (ufs_upload_file)
+        {
+            ufs_upload_file.close();
+        }
+    }
+    delay(0);
+}
+
+#endif
+
 void Http::init()
 {
     if (isBegin)
@@ -1010,6 +1203,10 @@ void Http::init()
     server->on(F("/ota"), handleOTA);
     server->on(F("/get_status"), handleGetStatus);
     server->on(F("/update"), HTTP_POST, handleUpdate, handleUpdateUpload);
+#ifdef USE_UFILESYS
+    server->on(F("/file_do"), handleFileDo);
+    server->on(F("/upload_file"), HTTP_POST, handleUploadFile, handleUploadFileUpload);
+#endif
     server->onNotFound(handleNotFound);
 
     Module *ptr = module;
