@@ -47,7 +47,24 @@ char *Util::dtostrfd(double number, unsigned char prec, char *s)
     }
     else
     {
-        return dtostrf(number, 1, prec, s);
+        dtostrf(number, 1, prec, s);
+        while (prec > 0)
+        {
+            if (s[strlen(s) - 1] == '0')
+            {
+                s[strlen(s) - 1] = 0;
+            }
+            else if (s[strlen(s) - 1] == '.')
+            {
+                s[strlen(s) - 1] = 0;
+                break;
+            }
+            else
+            {
+                break;
+            }
+        }
+        return s;
     }
 }
 
