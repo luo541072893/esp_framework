@@ -126,6 +126,10 @@ void Framework::setup()
     else
     {
         Config::readConfig();
+        if ((8 & globalConfig.debug.type) == 8)
+        {
+            Serial1.begin(115200);
+        }
     }
     if (globalConfig.uid[0] != '\0')
     {
