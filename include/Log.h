@@ -29,7 +29,7 @@ public:
 
 #ifdef USE_SYSLOG
     static IPAddress ip;
-    static void Syslog();
+    static void Syslog(uint8_t loglevel);
 #endif
     static void Record(uint8_t loglevel);
     static void Record(uint8_t loglevel, PGM_P formatP, ...);

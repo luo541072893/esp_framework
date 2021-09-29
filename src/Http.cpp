@@ -245,6 +245,20 @@ void Http::handleRoot()
 #endif
              "</td></tr>"));
 
+    if (isMore)
+    {
+        server->sendContent_P(PSTR("<tr><td>串口日志</td><td><select id='serL' name='serL' style='width:150px'>"
+                                   "<option value='0'>无</option><option value='1'>错误</option><option value='2'>信息</option><option value='3'>调试</option><option value='4'>更多调试</option></select></td></tr>"));
+#ifdef WEB_LOG_SIZE
+        server->sendContent_P(PSTR("<tr><td>WEB日志</td><td><select id='webL' name='webL' style='width:150px'>"
+                                   "<option value='0'>无</option><option value='1'>错误</option><option value='2'>信息</option><option value='3'>调试</option><option value='4'>更多调试</option></select></td></tr>"));
+#endif
+#ifdef USE_SYSLOG
+        server->sendContent_P(PSTR("<tr><td>syslog日志</td><td><select id='sysL' name='sysL' style='width:150px'>"
+                                   "<option value='0'>无</option><option value='1'>错误</option><option value='2'>信息</option><option value='3'>调试</option><option value='4'>更多调试</option></select></td></tr>"));
+#endif
+    }
+
 #ifdef USE_SYSLOG
     snprintf_P(html, sizeof(html),
                PSTR("<tr><td>syslog服务器</td><td>"
@@ -406,16 +420,31 @@ void Http::handleRoot()
     {
         server->sendContent_P(PSTR("setRadioValue('log_serial', '1');"));
     }
+    if (isMore)
+    {
+        snprintf_P(html, sizeof(html), PSTR("id('serL').value=%d;"), globalConfig.debug.seriallog_level);
+        server->sendContent_P(html);
+    }
 #ifdef USE_SYSLOG
     if ((2 & globalConfig.debug.type) == 2)
     {
         server->sendContent_P(PSTR("setRadioValue('log_syslog', '1');"));
+    }
+    if (isMore)
+    {
+        snprintf_P(html, sizeof(html), PSTR("id('sysL').value=%d;"), globalConfig.debug.syslog_level);
+        server->sendContent_P(html);
     }
 #endif
 #ifdef WEB_LOG_SIZE
     if ((4 & globalConfig.debug.type) == 4)
     {
         server->sendContent_P(PSTR("setRadioValue('log_web', '1');"));
+    }
+    if (isMore)
+    {
+        snprintf_P(html, sizeof(html), PSTR("id('webL').value=%d;"), globalConfig.debug.weblog_level);
+        server->sendContent_P(html);
     }
 #endif
     if ((8 & globalConfig.debug.type) == 8)
@@ -1262,10 +1291,18 @@ void Http::handleModuleSetting()
     {
         t = t | 8;
     }
+    if (server->hasArg(F("serL")))
+    {
+        globalConfig.debug.seriallog_level = server->arg(F("serL")).toInt();
+    }
 #ifdef WEB_LOG_SIZE
     if (server->arg(F("log_web")).equals(F("1")))
     {
         t = t | 4;
+    }
+    if (server->hasArg(F("webL")))
+    {
+        globalConfig.debug.weblog_level = server->arg(F("webL")).toInt();
     }
 #endif
 
@@ -1283,6 +1320,10 @@ void Http::handleModuleSetting()
         strcpy(globalConfig.debug.server, log_syslog_host.c_str());
         globalConfig.debug.port = log_syslog_port.toInt();
         WiFi.hostByName(globalConfig.debug.server, Log::ip);
+    }
+    if (server->hasArg(F("sysL")))
+    {
+        globalConfig.debug.syslog_level = server->arg(F("sysL")).toInt();
     }
 #endif
 
