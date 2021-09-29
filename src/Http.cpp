@@ -292,11 +292,11 @@ void Http::handleRoot()
             PSTR("<div id='tab7'>"
                  "<table class='gridtable'><thead><tr><th>文件名</th><th>大小</th><th>操作</th></tr></thead><tbody>"));
 
-        File root = LittleFS.open("/");
+        File root = LittleFS.open("/", "r");
         File file = root.openNextFile();
         while (file)
         {
-            snprintf_P(html, sizeof(html), PSTR("<tr><td>%s</td><td>%d</td><td><a href='/file_do?t=down&f=%s'>下载</a>&nbsp;&nbsp;<a href='#' onclick=\"javascript:if(confirm('你确定要删除该文件？')){ajaxPost('/file_do','t=del&f=%s')}\">删除</a></td></tr>"), file.name() + 1, file.size(), file.name(), file.name());
+            snprintf_P(html, sizeof(html), PSTR("<tr><td>%s</td><td>%d</td><td><a href='/file_do?t=down&f=%s'>下载</a>&nbsp;&nbsp;<a href='#' onclick=\"javascript:if(confirm('你确定要删除该文件？')){ajaxPost('/file_do','t=del&f=%s')}\">删除</a></td></tr>"), file.name()[0] == '/' ? file.name() + 1 : file.name(), file.size(), file.name(), file.name());
             server->sendContent_P(html);
             file = root.openNextFile();
         }
@@ -796,83 +796,67 @@ void Http::handleGetStatus()
     }
 
 #ifdef WEB_LOG_SIZE
-    bool cflg = true;
-    uint8_t counter = 0;
+    uint32_t index = 0;
     if (server->hasArg(F("i")))
     {
-        counter = server->arg(F("i")).toInt();
+        index = server->arg(F("i")).toInt();
     }
     snprintf_P(html, sizeof(html), PSTR(",\"logindex\":%d,\"log\":\""), Log::webLogIndex);
     server->sendContent_P(html);
-    if (counter != Log::webLogIndex)
+
+    bool cflg = (index);
+    char *line;
+    size_t len;
+    while (Log::GetLog(globalConfig.debug.weblog_level, &index, &line, &len))
     {
-        if (!counter)
+        if (cflg)
         {
-            counter = Log::webLogIndex;
-            cflg = false;
+            server->sendContent_P(PSTR("\\n"));
         }
-        do
+
+        size_t j = 0;
+        for (size_t i = 0; i < len - 1; i++)
         {
-            char *tmp;
-            uint16_t len;
-            Log::GetLog(counter, &tmp, &len);
-            if (len)
+            char each = line[i];
+            if (each == '\\' || each == '"')
             {
-                if (cflg)
-                {
-                    server->sendContent_P(PSTR("\\n"));
-                }
-
-                size_t j = 0;
-                for (size_t i = 0; i < len - 1; i++)
-                {
-                    char each = tmp[i];
-                    if (each == '\\' || each == '"')
-                    {
-                        html[j++] = '\\';
-                        html[j++] = each;
-                    }
-                    else if (each == '\b')
-                    {
-                        html[j++] = '\\';
-                        html[j++] = 'b';
-                    }
-                    else if (each == '\f')
-                    {
-                        html[j++] = '\\';
-                        html[j++] = 'f';
-                    }
-                    else if (each == '\n')
-                    {
-                        html[j++] = '\\';
-                        html[j++] = 'n';
-                    }
-                    else if (each == '\r')
-                    {
-                        html[j++] = '\\';
-                        html[j++] = 'r';
-                    }
-                    else if (each == '\t')
-                    {
-                        html[j++] = '\\';
-                        html[j++] = 't';
-                    }
-                    else
-                    {
-                        html[j++] = each;
-                    }
-                }
-                html[j++] = '\0';
-
-                server->sendContent_P(html);
-                cflg = true;
+                html[j++] = '\\';
+                html[j++] = each;
             }
-            counter++;
-            if (!counter)
+            else if (each == '\b')
             {
-                counter++;
-            } // Skip log index 0 as it is not allowed
-        } while (counter != Log::webLogIndex);
+                html[j++] = '\\';
+                html[j++] = 'b';
+            }
+            else if (each == '\f')
+            {
+                html[j++] = '\\';
+                html[j++] = 'f';
+            }
+            else if (each == '\n')
+            {
+                html[j++] = '\\';
+                html[j++] = 'n';
+            }
+            else if (each == '\r')
+            {
+                html[j++] = '\\';
+                html[j++] = 'r';
+            }
+            else if (each == '\t')
+            {
+                html[j++] = '\\';
+                html[j++] = 't';
+            }
+            else
+            {
+                html[j++] = each;
+            }
+        }
+        html[j++] = '\0';
+
+        server->sendContent_P(html);
+        cflg = true;
     }
     server->sendContent_P(PSTR("\"}}"));
 #else

@@ -101,6 +101,9 @@ void Config::resetConfig()
     strcpy(globalConfig.http.ota_url, OTA_URL);
 #endif
     globalConfig.debug.type = 5;
+    globalConfig.debug.seriallog_level = LOG_LEVEL_INFO;
+    globalConfig.debug.weblog_level = LOG_LEVEL_INFO;
+    globalConfig.debug.syslog_level = LOG_LEVEL_INFO;
     globalConfig.wifi.is_restart = true;
 
     Module *ptr = module;
@@ -134,6 +137,12 @@ bool Config::doConfig(uint8_t *buf, uint8_t *data, uint16_t len, const char *nam
             if (globalConfig.http.port == 0)
             {
                 globalConfig.http.port = 80;
+            }
+            if (globalConfig.debug.seriallog_level == LOG_LEVEL_NONE && globalConfig.debug.weblog_level == LOG_LEVEL_NONE && globalConfig.debug.syslog_level == LOG_LEVEL_NONE)
+            {
+                globalConfig.debug.seriallog_level = LOG_LEVEL_INFO;
+                globalConfig.debug.weblog_level = LOG_LEVEL_INFO;
+                globalConfig.debug.syslog_level = LOG_LEVEL_INFO;
             }
             if (globalConfig.wifi.ssid[0] == '\0')
             {

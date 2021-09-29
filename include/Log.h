@@ -24,7 +24,7 @@ public:
 #ifdef WEB_LOG_SIZE
     static uint8_t webLogIndex;
     static char webLog[WEB_LOG_SIZE];
-    static void GetLog(uint8_t idx, char **entry_pp, uint16_t *len_p);
+    static bool GetLog(uint32_t req_loglevel, uint32_t *index_p, char **entry_pp, size_t *len_p);
 #endif
 
 #ifdef USE_SYSLOG

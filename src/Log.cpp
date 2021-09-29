@@ -26,38 +26,66 @@ size_t Log::strchrspn(const char *str1, int character)
 }
 
 #ifdef WEB_LOG_SIZE
-void Log::GetLog(uint8_t idx, char **entry_pp, uint16_t *len_p)
+bool Log::GetLog(uint32_t req_loglevel, uint32_t *index_p, char **entry_pp, size_t *len_p)
 {
-    char *entry_p = NULL;
-    size_t len = 0;
-
-    if (idx)
+    if (!webLog) // Leave now if there is no buffer available
     {
-        char *it = webLog;
+        return false;
+    }
+
+    uint32_t index = *index_p;
+    if (!req_loglevel || (index == webLogIndex))
+    {
+        return false;
+    }
+
+    if (!index) // Dump all
+    {
+        index = webLog[0];
+    }
+
+    do
+    {
+        size_t len = 0;
+        uint32_t loglevel = 0;
+        char *entry_p = webLog;
         do
         {
-            uint8_t cur_idx = *it;
-            it++;
-            size_t tmp = strchrspn(it, '\1');
-            tmp++; // Skip terminating '\1'
-            if (cur_idx == idx)
-            { // Found the requested entry
-                len = tmp;
-                entry_p = it;
+            uint32_t cur_idx = *entry_p;
+            entry_p++;
+            size_t tmp = strchrspn(entry_p, '\1');
+            tmp++;                // Skip terminating '\1'
+            if (cur_idx == index) // Found the requested entry
+            {
+                loglevel = *entry_p - '0';
+                entry_p++; // Skip loglevel
+                len = tmp - 1;
                 break;
             }
-            it += tmp;
-        } while (it < webLog + WEB_LOG_SIZE && *it != '\0');
-    }
-    *entry_pp = entry_p;
-    *len_p = len;
+            entry_p += tmp;
+        } while (entry_p < webLog + WEB_LOG_SIZE && *entry_p != '\0');
+        index++;
+        if (index > 255) // Skip 0 as it is not allowed
+        {
+            index = 1;
+        }
+        *index_p = index;
+        if ((len > 0) && (loglevel <= req_loglevel))
+        {
+            *entry_pp = entry_p;
+            *len_p = len;
+            return true;
+        }
+        delay(0);
+    } while (index != webLogIndex);
+    return false;
 }
 #endif
 
 #ifdef USE_SYSLOG
-void Log::Syslog()
+void Log::Syslog(uint8_t loglevel)
 {
-    if ((2 & globalConfig.debug.type) != 2 || WiFi.status() != WL_CONNECTED || globalConfig.debug.server[0] == '\0' || globalConfig.debug.port == 0)
+    if ((2 & globalConfig.debug.type) != 2 || WiFi.status() != WL_CONNECTED || globalConfig.debug.server[0] == '\0' || globalConfig.debug.port == 0 || loglevel > globalConfig.debug.syslog_level)
     {
         return;
     }
@@ -86,26 +114,25 @@ void Log::Record(uint8_t loglevel)
     char mxtime[13]; // "01 13:45:21 "
     snprintf_P(mxtime, sizeof(mxtime), PSTR("%02d %02d:%02d:%02d "), Rtc::rtcTime.day_of_month, Rtc::rtcTime.hour, Rtc::rtcTime.minute, Rtc::rtcTime.second);
 
-    if ((1 & globalConfig.debug.type) == 1)
+    if ((1 & globalConfig.debug.type) == 1 && loglevel <= globalConfig.debug.seriallog_level)
     {
         Serial.printf(PSTR("%s%s\r\n"), mxtime, tmpData);
     }
-    if ((8 & globalConfig.debug.type) == 8)
+    if ((8 & globalConfig.debug.type) == 8 && loglevel <= globalConfig.debug.seriallog_level)
     {
         Serial1.printf(PSTR("%s%s\r\n"), mxtime, tmpData);
     }
 
 #ifdef WEB_LOG_SIZE
-    //if (Settings.webserver && (loglevel <= Settings.weblog_level))
-    //{
     // Delimited, zero-terminated buffer of log lines.
-    // Each entry has this format: [index][log data]['\1']
-    if (((4 & globalConfig.debug.type) == 4 || loglevel == LOG_LEVEL_ERROR) && loglevel != LOG_LEVEL_DEBUG)
+    // Each entry has this format: [index][loglevel][log data]['\1']
+    if (((4 & globalConfig.debug.type) == 4 || loglevel == LOG_LEVEL_ERROR) && loglevel <= globalConfig.debug.weblog_level)
     {
+        webLogIndex &= 0xFF;
         if (!webLogIndex)
             webLogIndex++;                                           // Index 0 is not allowed as it is the end of char string
         while (webLogIndex == webLog[0] ||                           // If log already holds the next index, remove it
-               strlen(webLog) + strlen(tmpData) + 16 > WEB_LOG_SIZE) // 13 = web_log_index + mxtime + '\1' + '\0'
+               strlen(webLog) + strlen(tmpData) + 17 > WEB_LOG_SIZE) // 13 = web_log_index + mxtime + '\1' + '\0'
         {
             char *it = webLog;
             it++;                                              // Skip web_log_index
@@ -113,14 +140,15 @@ void Log::Record(uint8_t loglevel)
             it++;                                              // Skip delimiting "\1"
             memmove(webLog, it, WEB_LOG_SIZE - (it - webLog)); // Move buffer forward to remove oldest log line
         }
-        snprintf_P(webLog, sizeof(webLog), PSTR("%s%c%s%s\1"), webLog, webLogIndex++, mxtime, tmpData);
+        snprintf_P(webLog, sizeof(webLog), PSTR("%s%c%c%s%s\1"), webLog, webLogIndex++, '0' + loglevel, mxtime, tmpData);
+        webLogIndex &= 0xFF;
         if (!webLogIndex)
             webLogIndex++; // Index 0 is not allowed as it is the end of char string
     }
 #endif
 
 #ifdef USE_SYSLOG
-    Syslog();
+    Syslog(loglevel);
 #endif
 }
 

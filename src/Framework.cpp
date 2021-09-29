@@ -88,6 +88,8 @@ void Framework::one(unsigned long baud)
 
     Serial.begin(baud);
     globalConfig.debug.type = 5;
+    globalConfig.debug.seriallog_level = LOG_LEVEL_INFO;
+    globalConfig.debug.weblog_level = LOG_LEVEL_INFO;
 
     addModule(WifiMgr::callModule);
     addModule(Http::callModule);
