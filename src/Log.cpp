@@ -8,6 +8,10 @@
 #ifdef WEB_LOG_SIZE
 uint8_t Log::webLogIndex = 1;
 char Log::webLog[WEB_LOG_SIZE] = {'\0'};
+#ifdef ESP32
+#include "AutoMutex.h"
+SemaphoreHandle_t logmutex = (SemaphoreHandle_t) nullptr;
+#endif
 #endif
 
 #ifdef USE_SYSLOG
@@ -38,6 +42,10 @@ bool Log::GetLog(uint32_t req_loglevel, uint32_t *index_p, char **entry_pp, size
     {
         return false;
     }
+
+#ifdef ESP32
+    AutoMutex mutex(&logmutex);
+#endif
 
     if (!index) // Dump all
     {
@@ -124,6 +132,9 @@ void Log::Record(uint8_t loglevel)
     }
 
 #ifdef WEB_LOG_SIZE
+#ifdef ESP32
+    AutoMutex mutex(&logmutex);
+#endif
     // Delimited, zero-terminated buffer of log lines.
     // Each entry has this format: [index][loglevel][log data]['\1']
     if (((4 & globalConfig.debug.type) == 4 || loglevel == LOG_LEVEL_ERROR) && loglevel <= globalConfig.debug.weblog_level)
