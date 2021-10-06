@@ -102,4 +102,10 @@ extern uint8_t pwm_channel[8];
 uint32_t FlashWriteStartSector(void);
 uint32_t FlashWriteMaxSector(void);
 uint8_t *FlashDirectAccess(void);
+
+#ifdef CONFIG_ESP32_ENABLE_COREDUMP_TO_FLASH
+#ifdef USE_UFILESYS
+void CoreDumpToFile();
+#endif
+#endif
 #endif

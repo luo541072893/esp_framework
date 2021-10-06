@@ -1046,7 +1046,7 @@ void Http::handleFileDo()
     if (!FileSystem::getFs()->exists(file))
     {
         Log::Info(PSTR("File '%s' not found"), file);
-        if (type == "del")
+        if (type == F("del"))
         {
             server->send_P(200, PSTR("text/html"), PSTR("{\"code\":0,\"msg\":\"文件不存在\"}"));
         }
@@ -1056,9 +1056,20 @@ void Http::handleFileDo()
         }
         return;
     }
-    if (type == "del")
+    if (type == F("del"))
     {
-        FileSystem::getFs()->remove(file);
+        if (strstr(file, "coredump_"))
+        {
+            for (uint8_t index = 1; index <= 20; index++)
+            {
+                sprintf(file, PSTR("/coredump_%02d"), index);
+                FileSystem::getFs()->remove(file);
+            }
+        }
+        else
+        {
+            FileSystem::getFs()->remove(file);
+        }
         server->send_P(200, PSTR("text/html"), PSTR("{\"code\":1,\"msg\":\"删除成功\"}"));
         return;
     }
@@ -1095,7 +1106,14 @@ void Http::handleFileDo()
         }
     }
 
-    snprintf_P(attachment, sizeof(attachment), PSTR("attachment; filename=%s"), cp);
+    if (strstr(file, "coredump_"))
+    {
+        snprintf_P(attachment, sizeof(attachment), PSTR("attachment; filename=%s_%s"), cp, ESP.getSketchMD5().c_str());
+    }
+    else
+    {
+        snprintf_P(attachment, sizeof(attachment), PSTR("attachment; filename=%s"), cp);
+    }
     server->sendHeader(F("Content-Disposition"), attachment);
     server->send_P(200, PSTR("application/octet-stream"), "");
 
@@ -1120,6 +1138,10 @@ void Http::handleFileDo()
     }
     download_file.close();
     download_Client.stop();
+    if (strstr(file, "coredump_"))
+    {
+        FileSystem::getFs()->remove(file);
+    }
     return;
 }
 

@@ -300,4 +300,72 @@ int8_t writeUserData(size_t dst_offset, const void *src, size_t size)
     return 0;
 }
 
+#ifdef CONFIG_ESP32_ENABLE_COREDUMP_TO_FLASH
+#ifdef USE_UFILESYS
+extern "C"
+{
+#include "esp_core_dump.h"
+}
+void CoreDumpToFile()
+{
+    size_t size = 0;
+    size_t address = 0;
+    if (esp_core_dump_image_get(&address, &size) != ESP_OK)
+    {
+        return;
+    }
+    const esp_partition_t *pt = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_COREDUMP, "coredump");
+    if (!pt)
+    {
+        return;
+    }
+
+    char fileName[13] = {0}; // /coredump_01
+    uint8_t index = 0;
+    for (index = 1; index <= 20; index++)
+    {
+        sprintf(fileName, PSTR("/coredump_%02d"), index);
+        if (!LittleFS.exists(fileName))
+        {
+            break;
+        }
+    }
+    esp_err_t err;
+    File file = LittleFS.open(fileName, "w");
+    if (file)
+    {
+        uint8_t bf[256];
+        int16_t toRead;
+        for (int16_t i = 0; i < (size / 256) + 1; i++)
+        {
+            toRead = (size - i * 256) > 256 ? 256 : (size - i * 256);
+            err = esp_partition_read(pt, i * 256, bf, toRead);
+            if (err != ESP_OK)
+            {
+                //Serial.printf("FAIL [%x]\n", er);
+                break;
+            }
+            file.write(bf, toRead);
+        }
+        file.close();
+    }
+    if (index >= 20)
+    {
+        sprintf(fileName, PSTR("/coredump_%02d"), 1);
+    }
+    else
+    {
+        sprintf(fileName, PSTR("/coredump_%02d"), index + 1);
+    }
+    LittleFS.remove(fileName);
+
+    err = esp_partition_erase_range(pt, 0, pt->size);
+    if (err == ESP_OK)
+    {
+        const uint32_t invalid_size = 0xFFFFFFFF;
+        err = esp_partition_write(pt, 0, &invalid_size, sizeof(invalid_size));
+    }
+}
+#endif
+#endif
 #endif
