@@ -300,8 +300,7 @@ int8_t writeUserData(size_t dst_offset, const void *src, size_t size)
     return 0;
 }
 
-#ifdef CONFIG_ESP32_ENABLE_COREDUMP_TO_FLASH
-#ifdef USE_UFILESYS
+#if defined(CONFIG_ESP32_ENABLE_COREDUMP_TO_FLASH) && defined(USE_UFILESYS)
 extern "C"
 {
 #include "esp_core_dump.h"
@@ -366,6 +365,5 @@ void CoreDumpToFile()
         err = esp_partition_write(pt, 0, &invalid_size, sizeof(invalid_size));
     }
 }
-#endif
 #endif
 #endif

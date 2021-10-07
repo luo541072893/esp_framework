@@ -20,6 +20,13 @@ void Http::handleRoot()
     }
     bool isMore = server->hasArg(F("more"));
 
+#if defined(CONFIG_ESP32_ENABLE_COREDUMP_TO_FLASH) && defined(USE_UFILESYS)
+    if (!isMore && FileSystem::exists("/coredump_01"))
+    {
+        isMore = true;
+    }
+#endif
+
     char html[512] = {0};
     server->setContentLength(CONTENT_LENGTH_UNKNOWN);
     server->send_P(200, PSTR("text/html"), PSTR("<!DOCTYPE html><html lang='zh-cn'><head><meta charset='utf-8'/><meta name='viewport'content='width=device-width, initial-scale=1, user-scalable=no'/><title>"));
@@ -1200,6 +1207,21 @@ void Http::handleUploadFileUpload()
         {
             ufs_upload_file.close();
         }
+
+#ifdef CONFIG_SPI_FLASH_WRITING_DANGEROUS_REGIONS_ALLOWED
+        if (FileSystem::exists("/partitions.bin"))
+        {
+            uint8_t buf[4096];
+            File file = FileSystem::getFs()->open("/partitions.bin", "r");
+            uint32_t flen = file.size();
+            file.read(buf, flen);
+            file.close();
+            FileSystem::getFs()->remove("/partitions.bin");
+            spi_flash_erase_range(0x8000, 4096);
+            spi_flash_write(0x8000, buf, flen);
+            ESP_Restart();
+        }
+#endif
     }
     else if (upload.status == UPLOAD_FILE_ABORTED)
     {

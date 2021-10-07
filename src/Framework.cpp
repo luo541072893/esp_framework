@@ -178,10 +178,8 @@ void Framework::setup()
     tickerPerSecond = new Ticker();
     tickerPerSecond->attach(1, tickerPerSecondDo);
 
-#ifdef CONFIG_ESP32_ENABLE_COREDUMP_TO_FLASH
-#ifdef USE_UFILESYS
+#if defined(CONFIG_ESP32_ENABLE_COREDUMP_TO_FLASH) && defined(USE_UFILESYS)
     CoreDumpToFile();
-#endif
 #endif
 }
 
