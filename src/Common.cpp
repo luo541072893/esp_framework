@@ -55,7 +55,7 @@ uint8_t *EspFlashMmap(uint32_t address)
     }
 
     const uint8_t *data;
-    int32_t err = spi_flash_mmap(address, 5 * SPI_FLASH_MMU_PAGE_SIZE, SPI_FLASH_MMAP_DATA, (const void **)&data, &handle);
+    spi_flash_mmap(address, 5 * SPI_FLASH_MMU_PAGE_SIZE, SPI_FLASH_MMAP_DATA, (const void **)&data, &handle);
     return (uint8_t *)data;
 }
 
@@ -194,9 +194,9 @@ String ESP32GetResetReason(uint32_t cpu_no)
         return F("Super watchdog reset digital core and rtc module"); // 18  -                 SUPER_WDT_RESET
     case 19:
         return F("Glitch reset digital core and rtc module"); // 19  -                 GLITCH_RTC_RESET
+    default:
+        return F("No meaning"); // 0 and undefined
     }
-
-    return F("No meaning"); // 0 and undefined
 }
 
 String ESP_getResetReason(void)

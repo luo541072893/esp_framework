@@ -75,6 +75,8 @@ void WifiMgr::wiFiEvent(WiFiEvent_t event)
         Log::Info(PSTR("ETH Stopped"));
         bitClear(Config::statusFlag, 2);
         break;
+    default:
+        break;
     }
 }
 #endif

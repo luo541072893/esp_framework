@@ -21,9 +21,21 @@ void Http::handleRoot()
     bool isMore = server->hasArg(F("more"));
 
 #if defined(CONFIG_ESP32_ENABLE_COREDUMP_TO_FLASH) && defined(USE_UFILESYS)
-    if (!isMore && FileSystem::exists("/coredump_01"))
+    if (!isMore)
     {
-        isMore = true;
+        File root = LittleFS.open("/", "r");
+        File file = root.openNextFile();
+        while (file)
+        {
+            if (strstr(file.name(), "coredump_"))
+            {
+                isMore = true;
+                break;
+            }
+            file.close();
+            file = root.openNextFile();
+        }
+        root.close();
     }
 #endif
 
@@ -319,8 +331,10 @@ void Http::handleRoot()
         {
             snprintf_P(html, sizeof(html), PSTR("<tr><td>%s</td><td>%d</td><td><a href='/file_do?t=down&f=%s'>下载</a>&nbsp;&nbsp;<a href='#' onclick=\"javascript:if(confirm('你确定要删除该文件？')){ajaxPost('/file_do','t=del&f=%s')}\">删除</a></td></tr>"), file.name()[0] == '/' ? file.name() + 1 : file.name(), file.size(), file.name(), file.name());
             server->sendContent_P(html);
+            file.close();
             file = root.openNextFile();
         }
+        root.close();
         server->sendContent_P(PSTR("</tbody></table>"));
 
         snprintf_P(html, sizeof(html),
@@ -1115,7 +1129,7 @@ void Http::handleFileDo()
 
     if (strstr(file, "coredump_"))
     {
-        snprintf_P(attachment, sizeof(attachment), PSTR("attachment; filename=%s_%s"), cp, ESP.getSketchMD5().c_str());
+        snprintf_P(attachment, sizeof(attachment), PSTR("attachment; filename=%s_%s_%s"), UID, &cp[9], ESP.getSketchMD5().c_str());
     }
     else
     {

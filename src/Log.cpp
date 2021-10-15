@@ -7,7 +7,7 @@
 
 #ifdef WEB_LOG_SIZE
 uint8_t Log::webLogIndex = 1;
-char Log::webLog[WEB_LOG_SIZE] = {'\0'};
+char Log::webLog[WEB_LOG_SIZE] = {0};
 #ifdef ESP32
 #include "AutoMutex.h"
 SemaphoreHandle_t logmutex = (SemaphoreHandle_t) nullptr;
@@ -32,11 +32,6 @@ size_t Log::strchrspn(const char *str1, int character)
 #ifdef WEB_LOG_SIZE
 bool Log::GetLog(uint32_t req_loglevel, uint32_t *index_p, char **entry_pp, size_t *len_p)
 {
-    if (!webLog) // Leave now if there is no buffer available
-    {
-        return false;
-    }
-
     uint32_t index = *index_p;
     if (!req_loglevel || (index == webLogIndex))
     {
