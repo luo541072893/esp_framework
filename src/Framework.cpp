@@ -154,7 +154,7 @@ void Framework::setup()
     else
     {
 #ifndef DISABLE_MQTT
-#ifndef USE_ASYNC_MQTT_CLIENT
+#if !defined USE_ASYNC_MQTT_CLIENT and !defined USE_ESP32_MQTT
         wifiClient.setTimeout(200);
         Mqtt::setClient(wifiClient);
 #endif

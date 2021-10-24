@@ -6,26 +6,34 @@
 
 #include "Arduino.h"
 
+#if CONFIG_IDF_TARGET_ESP32
+#define USE_ESP32_MQTT
+#endif
+
 #ifdef USE_ASYNC_MQTT_CLIENT
 #include <AsyncMqttClient.h>
 #define PubSubClient AsyncMqttClient
 #define MQTT_CALLBACK_SIGNATURE std::function<void(char *, uint8_t *, unsigned int)> callback
+#elif defined USE_ESP32_MQTT
+#include <functional>
+#include "mqtt_client.h"
+#define PubSubClient esp_mqtt_client_handle_t 
+#define MQTT_CALLBACK_SIGNATURE std::function<void(char *, uint8_t *, unsigned int)> callback
 #else
 #include <PubSubClient.h>
-#endif
-
-#define MQTT_CONNECTED_CALLBACK_SIGNATURE std::function<void()> connectedcallback
-
 #if CONFIG_IDF_TARGET_ESP32 && (!defined USE_TASK_MQTT_CONNECT)
 #define USE_TASK_MQTT_CONNECT 1
 #endif
+
+#endif
+
+#define MQTT_CONNECTED_CALLBACK_SIGNATURE std::function<void()> connectedcallback
 
 class Mqtt
 {
 protected:
     static String getTopic(uint8_t prefix, String subtopic, String devType = "");
     static uint8_t operationFlag;
-    static void doReportInfo();
 
 public:
     static PubSubClient mqttClient;
@@ -33,6 +41,8 @@ public:
 #ifdef USE_ASYNC_MQTT_CLIENT
     static MQTT_CALLBACK_SIGNATURE;
     static char mqttwill[80];
+#elif defined USE_ESP32_MQTT
+    static MQTT_CALLBACK_SIGNATURE;
 #endif
 
     static uint32_t disconnectCounter; // 重连次数
@@ -41,6 +51,7 @@ public:
 
     static bool mqttConnect();
     static void availability();
+    static void doReportInfo();
     static void mqttSetLoopCallback(MQTT_CALLBACK_SIGNATURE);
     static void mqttSetConnectedCallback(MQTT_CONNECTED_CALLBACK_SIGNATURE);
 
@@ -48,7 +59,7 @@ public:
     static String getStatTopic(String topic, String devType = "");
     static String getTeleTopic(String topic, String devType = "");
 
-#ifndef USE_ASYNC_MQTT_CLIENT
+#if !defined USE_ASYNC_MQTT_CLIENT and !defined USE_ESP32_MQTT
     static PubSubClient &setClient(Client &client);
 #endif
 

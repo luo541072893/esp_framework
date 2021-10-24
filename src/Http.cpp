@@ -211,7 +211,7 @@ void Http::handleRoot()
                PSTR("<tr><td>状态</td><td id='mqttconnected'>%s 重连次数：%d</td></tr>"
                     "<tr><td colspan='2'><button type='submit' class='btn-info'>保存</button></td></tr>"
                     "</tbody></table></form>"),
-               Mqtt::mqttClient.connected() ? PSTR("已连接") : PSTR("未连接"), Mqtt::disconnectCounter - 1);
+               bitRead(Config::statusFlag, 1) ? PSTR("已连接") : PSTR("未连接"), Mqtt::disconnectCounter - 1);
     server->sendContent_P(html);
 
 #ifndef DISABLE_MQTT_DISCOVERY
@@ -503,9 +503,16 @@ void Http::handleMqtt()
     globalConfig.mqtt.interval = server->arg(F("interval")).toInt();
     Config::saveConfig();
 
-    if (Mqtt::mqttClient.connected())
+    if (bitRead(Config::statusFlag, 1))
     {
+#ifdef USE_ESP32_MQTT
+        esp_mqtt_client_stop(Mqtt::mqttClient);
+        esp_mqtt_client_destroy(Mqtt::mqttClient);
+        Mqtt::mqttClient = NULL;
+        bitClear(Config::statusFlag, 1);
+#else
         Mqtt::mqttClient.disconnect();
+#endif
     }
 
     if (Mqtt::mqttConnect())
