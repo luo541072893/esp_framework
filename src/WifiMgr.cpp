@@ -66,6 +66,7 @@ void WifiMgr::wiFiEvent(WiFiEvent_t event)
         bitSet(Config::statusFlag, 2);
         WiFi.disconnect(true);
         WiFi.setAutoConnect(false);
+        WiFi.mode(WIFI_OFF);
         break;
     case SYSTEM_EVENT_ETH_DISCONNECTED:
         Log::Info(PSTR("ETH Disconnected"));
@@ -286,7 +287,9 @@ void WifiMgr::loop()
     }
     if (bitRead(Config::statusFlag, 2))
     {
-        WiFi.mode(WIFI_AP_STA);
+        WiFi.disconnect(true);
+        WiFi.setAutoConnect(false);
+        WiFi.mode(WIFI_OFF);
         configPortalStart = 0;
         return;
     }

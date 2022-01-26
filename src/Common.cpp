@@ -55,7 +55,7 @@ uint8_t *EspFlashMmap(uint32_t address)
     }
 
     const uint8_t *data;
-    spi_flash_mmap(address, 5 * SPI_FLASH_MMU_PAGE_SIZE, SPI_FLASH_MMAP_DATA, (const void **)&data, &handle);
+    spi_flash_mmap(address, 8 * SPI_FLASH_MMU_PAGE_SIZE, SPI_FLASH_MMAP_DATA, (const void **)&data, &handle);
     return (uint8_t *)data;
 }
 
