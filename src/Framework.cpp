@@ -81,6 +81,10 @@ void Framework::tickerPerSecondDo()
 
 void Framework::one(unsigned long baud)
 {
+#ifdef ESP32
+    DisableBrownout();
+#endif
+
     Rtc::rtcRebootLoad();
     Rtc::rtcReboot.fast_reboot_count++;
     Rtc::rtcRebootSave();
@@ -235,7 +239,7 @@ void Framework::loop()
             ptr->perSecondDo();
             ptr = ptr->next;
         }
-        //Log::Info("loopLoadAvg:%d", loopLoadAvg);
+        // Log::Info("loopLoadAvg:%d", loopLoadAvg);
     }
 
     uint32_t my_activity = millis() - my_sleep;

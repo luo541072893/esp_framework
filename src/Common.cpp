@@ -151,6 +151,15 @@ uint32_t ESP_getChipId(void)
     return id;
 }
 
+#include "soc/soc.h"
+#include "soc/rtc_cntl_reg.h"
+
+void DisableBrownout(void)
+{
+    // https://github.com/espressif/arduino-esp32/issues/863#issuecomment-347179737
+    WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); // Disable brownout detector
+}
+
 String ESP32GetResetReason(uint32_t cpu_no)
 {
     // tools\sdk\include\esp32\rom\rtc.h
@@ -341,7 +350,7 @@ void CoreDumpToFile()
             err = esp_partition_read(pt, i * 256, bf, toRead);
             if (err != ESP_OK)
             {
-                //Serial.printf("FAIL [%x]\n", er);
+                // Serial.printf("FAIL [%x]\n", er);
                 break;
             }
             file.write(bf, toRead);

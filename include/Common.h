@@ -85,6 +85,7 @@ bool espconfig_spiflash_read(size_t src_addr, void *dest, size_t size);
 
 uint32_t sntp_get_current_timestamp();
 
+void DisableBrownout(void);
 String ESP32GetResetReason(uint32_t cpu_no);
 String ESP_getResetReason(void);
 uint32_t ESP_getChipId(void);
