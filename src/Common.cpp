@@ -80,7 +80,8 @@ uint8_t *FlashDirectAccess(void)
     return data;
 }
 
-EEPROMClass EEPROMconfig("espconfig", SPI_FLASH_SEC_SIZE);
+// EEPROMClass EEPROMconfig("espconfig", SPI_FLASH_SEC_SIZE);
+EEPROMClass EEPROMconfig("espconfig");
 bool isIniteeprom = false;
 bool espconfig_spiflash_init()
 {
@@ -136,7 +137,7 @@ uint32_t sntp_get_current_timestamp()
     return now;
 }
 
-bool Ticker::active()
+inline bool Ticker::active()
 {
     return _timer;
 }
@@ -245,7 +246,7 @@ uint8_t pin2chan(uint8_t pin)
     return 0;
 }
 
-void analogWrite(uint8_t pin, int val)
+inline void analogWrite(uint8_t pin, int val)
 {
     uint8_t channel = pin2chan(pin);
     ledcWrite(channel + PWM_CHANNEL_OFFSET, val);
