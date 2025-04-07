@@ -413,7 +413,7 @@ void Http::handleRoot()
 #endif
 
     server->sendContent_P(
-        PSTR("</div><div style='text-align:center;margin-top:20px'>开发者：<a href='https://github.com/qlwz' target='_blank'>情留メ蚊子</a>&nbsp;&nbsp;&nbsp;<a href='https://bbs.iobroker.cn' target='_blank'>来和大神一起玩智能家居</a></div><div></body></html>"));
+        PSTR("</div><div style='text-align:center;margin-top:20px'>开发者：<a href='https://b23.tv/Sojogit' target='_blank'>ilovehui</a>&nbsp;&nbsp;&nbsp;<a href='https://b23.tv/Sojogit' target='_blank'>来和大神一起玩智能家居</a></div><div></body></html>"));
 
     // TAB 2
     snprintf_P(html, sizeof(html), PSTR("<script type='text/javascript'>%ssetRadioValue('dhcp', '%d');dhcponchange(null);"),
